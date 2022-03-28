@@ -1,0 +1,49 @@
+@use './abstracts/mixins' as *;
+
+// NO SPACING
+.u-no-margin {
+	margin: 0;
+}
+
+.u-no-padding {
+	padding: 0;
+}
+
+
+// MOBILE HIDE AND SHOW STYLES
+.u-hide-mobile {
+	@include mq($until: tablet) {
+		display: none;
+	}
+}
+
+.u-only-mobile {
+	@include mq($from: tablet) {
+		display: none;
+	}
+}
+
+
+// RESPONSIVE VERTCIAL SPACINGS
+// Resposive vertical spacing utility classes generated from $vertical-spacings map in
+// ./_variables.scss. Creates the following utility classes .u-<m/p><t/b>-<s/m/l>
+//
+// Examples:
+// .u-mt-s, .u-pb-m, .u-pt-l
+@each $prop in margin, padding {
+	@each $position in top, bottom {
+		.u-#{str-slice($prop, 0, 1)}#{str-slice($position, 0, 1)} {
+			@each $size in s, m, l {
+				&-#{$size} {
+					@include v-spacing($prop, $position, $size);
+				}
+			}
+		}
+	}
+}
+
+
+// TRUNCATE TEXT
+.u-truncate-text {
+	@include truncate-text;
+}

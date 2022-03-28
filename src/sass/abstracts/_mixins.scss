@@ -1,0 +1,131 @@
+@use 'sass:map';
+@use './constants' as *;
+
+
+// MEDIA QUERIES
+@mixin mq($from: null, $until: null, $only: null) {
+	// A mixin for applying responsive properties, takes in device names (tablet, desktop, wide)
+	// then uses corresponsing values from $breakpoints map in ./_variables.scss, or pixel values.
+	//
+	// Examples:
+	// for $breakpoints: (tablet: 600px, desktop: 1024px, wide: 1440px)
+	// @include mq($from: tablet) or @include mq(tablet): 600px and up
+	// @include mq($from: 430px) or @include mq(430px): 430px and up
+	// @include mq($until: wide): less than 1440px (up to 1439px)
+	// @include mq($from: 200px,$until: tablet) or @include mq(200px,tablet): 200px until 599px (200px <= x < 600px)
+	// @include mq($only: desktop): 1024px until 1440px (1024px <= x < 1439px)
+	// sass-lint:disable-block brace-style
+	// ONLY
+	@if $only { // if $only given, ignore user $from and $until values and set these
+		// Map device names to breakpoint values in ./_variables.scss for $from and $until
+		@if $only == 'tablet' {
+			$from: map.get($breakpoints, tablet);
+			$until: map.get($breakpoints, desktop);
+		} @else if $only == 'desktop' {
+			$from: map.get($breakpoints, desktop);
+			$until: map.get($breakpoints, wide);
+		}
+	} @else {
+		// FROM
+		// Map device names to breakpoint values in ./_variables.scss for $from
+		@if $from == 'tablet' {
+			$from: map.get($breakpoints, tablet);
+		} @else if $from == 'desktop' {
+			$from: map.get($breakpoints, desktop);
+		} @else if $from == 'wide' {
+			$from: map.get($breakpoints, wide);
+		}
+
+		// Map device names to breakpoint values in ./_variables.scss for $until
+		@if $until == 'tablet' {
+			$until: map.get($breakpoints, tablet);
+		} @else if $until == 'desktop' {
+			$until: map.get($breakpoints, desktop);
+		} @else if $until == 'wide' {
+			$until: map.get($breakpoints, wide);
+		}
+	}
+	@if $from {
+		@if $until { // if both $from and $until given (by user or due to $only being given)
+			@media (min-width: $from) and (max-width: #{$until - 1px}) { @content; }
+		} @else { // if only $from given
+			@media (min-width: $from) { @content; }
+		}
+	} @else if $until { // if only $until given
+		@media (max-width: #{$until - 1px}) { @content; }
+	}
+}
+
+
+// RESPONSIVE PROPERTIES
+@mixin resp-prop($property, $mob: null, $tab: null, $desk: null, $wide: null) {
+	// Create responsive property values by specifying the property name, the mobile, tablet, desktop and wide values.
+	//
+	// Example:
+	// @include resp-prop(margin, '20px 0', 40px, '60px 20PX', 80px)
+	#{$property}: #{$mob};
+	@if $tab {
+		@include mq($from: tablet) {
+			#{$property}: #{$tab};
+		}
+	}
+	@if $desk {
+		@include mq($from: desktop) {
+			#{$property}: #{$desk};
+		}
+	}
+	@if $wide {
+		@include mq($from: wide) {
+			#{$property}: #{$wide};
+		}
+	}
+}
+
+
+// VERTICAL SPACING
+@mixin v-spacing($prop, $position, $size) {
+	$spacings: map.get($vertical-spacings, #{$size});
+	#{$prop}-#{$position}: map.get($spacings, 'mobile') !important;
+	// Add tablet spacings if different from mobile
+	@if map.get($spacings, 'mobile') != map.get($spacings, 'tablet') {
+		@include mq(tablet) {
+			#{$prop}-#{$position}: map.get($spacings, 'tablet') !important;
+		}
+	}
+	// Add desktop spacings if different from tablet
+	@if map.get($spacings, 'tablet') != map.get($spacings, 'desktop') {
+		@include mq(desktop) {
+			#{$prop}-#{$position}: map.get($spacings, 'desktop') !important;
+		}
+	}
+}
+
+
+// TRUNCATE TEXT
+@mixin truncate-text() {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+// ADDS AN OUTLINE THAT IS ONLY VISIBLE ON KEYBOARD FOCUS WITH FALLBACK
+@mixin focus-outline($outline: false, $light: false) {
+	// @if $light {
+	// 	$outline: $outline-light;
+	// }
+	// @else if $outline == false {
+	// 	$outline: $outline-dark;
+	// }
+
+	// &:focus {
+	// 	outline: $outline;
+	// }
+
+	// &:focus-visible {
+	// 	outline: $outline;
+	// }
+
+	&:focus:not(:focus-visible) {
+		outline: none;
+	}
+}

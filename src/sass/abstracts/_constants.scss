@@ -1,0 +1,14 @@
+// BREAKPOINTS
+$breakpoints: (
+	tablet: 600px,
+	desktop: 1024px,
+	wide: 1440px
+);
+
+
+// VERTICAL SPACINGS
+$vertical-spacings: (
+	s: (mobile: 20px, tablet: 30px, desktop: 40px),
+	m: (mobile: 40px, tablet: 50px, desktop: 60px),
+	l: (mobile: 60px, tablet: 80px, desktop: 120px)
+);
