@@ -145,20 +145,28 @@ export default class ReorderList extends HTMLElement {
 				}
 				break;
 			case 'ArrowUp':
-			case 'ArrowDown': {
+			case 'ArrowDown':
+			case 'Home':
+			case 'End': {
 				if (!this.liElKbGrabbed) {
 					return;
 				}
 
-				const direction = keyPressed == 'ArrowUp' ? -1 : 1;
+				e.preventDefault();
 				const lastLiElIndex = this.liEls.length - 1;
-				this.targetLiElIndex += direction;
-				if (this.targetLiElIndex < 0) {
-					this.targetLiElIndex = lastLiElIndex;
-				} else if (this.targetLiElIndex > lastLiElIndex) {
-					this.targetLiElIndex = 0;
-				} else if (this.targetLiElIndex == this.selectedLiElIndex) {
+
+				if (keyPressed.includes('Arrow')) {
+					const direction = keyPressed == 'ArrowUp' ? -1 : 1;
 					this.targetLiElIndex += direction;
+					if (this.targetLiElIndex < 0) {
+						this.targetLiElIndex = lastLiElIndex;
+					} else if (this.targetLiElIndex > lastLiElIndex) {
+						this.targetLiElIndex = 0;
+					} else if (this.targetLiElIndex == this.selectedLiElIndex) {
+						this.targetLiElIndex += direction;
+					}
+				} else {
+					this.targetLiElIndex = keyPressed == 'Home' ? 0 : lastLiElIndex;
 				}
 
 				this.liEls.forEach((liEl, index) => {
