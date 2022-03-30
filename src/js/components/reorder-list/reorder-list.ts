@@ -120,6 +120,7 @@ export default class ReorderList extends HTMLElement {
 		this.undoKeyboardMove();
 	}
 
+
 	private keydownHandler(e: KeyboardEvent): void {
 		const target = e.target as HTMLElement;
 		const parentLiEl = target.closest(`[${ATTRS.ITEM}]`) as HTMLLIElement;
