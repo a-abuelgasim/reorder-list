@@ -55,8 +55,6 @@ export default class ReorderList extends HTMLElement {
 
 
 		/* CLASS METHOD BINDINGS */
-		this.focusOutHandler = this.focusOutHandler.bind(this);
-		this.keydownHandler = this.keydownHandler.bind(this);
 		this.endMove = this.endMove.bind(this);
 		this.mouseDownHandler = this.mouseDownHandler.bind(this);
 		this.setNextSiblingMidpoint = this.setNextSiblingMidpoint.bind(this);
@@ -64,6 +62,11 @@ export default class ReorderList extends HTMLElement {
 		this.translateLiEl = this.translateLiEl.bind(this);
 		this.updateSiblingLiIndexes = this.updateSiblingLiIndexes.bind(this);
 		this.windowMouseMoveHandler = this.windowMouseMoveHandler.bind(this);
+
+		this.focusOutHandler = this.focusOutHandler.bind(this);
+		this.keydownHandler = this.keydownHandler.bind(this);
+		this.moveSelectedToTarget = this.moveSelectedToTarget.bind(this);
+		this.undoKeyboardMove = this.undoKeyboardMove.bind(this);
 	}
 
 
@@ -92,15 +95,6 @@ export default class ReorderList extends HTMLElement {
 
 
 		/* INITIALISATION */
-		// Add any initialisation code here
-
-
-		// Dispatch 'ready' event
-		// window.dispatchEvent(new CustomEvent(EVENTS.OUT.READY, {
-		// 	'detail': {
-		// 		'id': this.id,
-		// 	}
-		// }));
 	}
 
 
@@ -123,13 +117,13 @@ export default class ReorderList extends HTMLElement {
 
 	private keydownHandler(e: KeyboardEvent): void {
 		const target = e.target as HTMLElement;
-		const parentLiEl = target.closest(`[${ATTRS.ITEM}]`) as HTMLLIElement;
-		if (!parentLiEl) {
+		const selectedLiEl = target.closest(`[${ATTRS.ITEM}]`) as HTMLLIElement;
+		if (!selectedLiEl) {
 			return;
 		}
 
 		const keydownOnBtn = target.closest(`[${ATTRS.BTN}]`);
-		const parentLiIndex = this.liEls.indexOf(parentLiEl);
+		const parentLiIndex = this.liEls.indexOf(selectedLiEl);
 		const keyPressed = e.key;
 		switch(keyPressed) {
 			case 'Escape':
@@ -140,17 +134,22 @@ export default class ReorderList extends HTMLElement {
 				e.preventDefault();
 				if (!this.liElKbGrabbed && keydownOnBtn) {
 					this.liElKbGrabbed = true;
-					parentLiEl.classList.add('grabbed');
+					selectedLiEl.classList.add('grabbed');
 					this.selectedLiElIndex = parentLiIndex;
+					this.selectedLiEl = selectedLiEl;
 					this.targetLiElIndex = this.selectedLiElIndex;
 					break;
 				}
-				if (this.liElKbGrabbed && parentLiEl) {
-					console.log('finish move', this.targetLiElIndex);
+				if (this.liElKbGrabbed && selectedLiEl) {
+					this.moveSelectedToTarget();
 				}
 				break;
 			case 'ArrowUp':
 			case 'ArrowDown': {
+				if (!this.liElKbGrabbed) {
+					return;
+				}
+
 				const direction = keyPressed == 'ArrowUp' ? -1 : 1;
 				const lastLiElIndex = this.liEls.length - 1;
 				this.targetLiElIndex += direction;
@@ -175,11 +174,16 @@ export default class ReorderList extends HTMLElement {
 	}
 
 
+	private moveSelectedToTarget(): void {
+		this.ulEl!.insertBefore(this.selectedLiEl, this.liEls[this.targetLiElIndex]);
+		(this.selectedLiEl.querySelector(`[${ATTRS.BTN}]`) as HTMLButtonElement).focus();
+		this.liEls = [...this.querySelectorAll(`[${ATTRS.ITEM}]`)] as HTMLLIElement[];
+	}
+
+
 	private undoKeyboardMove(): void {
-		this.liEls.forEach((liEl) => {
-			liEl.classList.remove('grabbed', 'targeted');
-			this.liElKbGrabbed = false;
-		});
+		this.liElKbGrabbed = false;
+		this.liEls.forEach(liEl => liEl.classList.remove('grabbed', 'targeted'));
 	}
 
 
