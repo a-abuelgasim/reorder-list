@@ -55,6 +55,7 @@ li[ace-reorder-list-item-grabbed] {
 /* stylelint-disable */
 //// ////////////////////////////
 
+// MOTION SENSITIVITY
 @media (prefers-reduced-motion: no-preference) {
 	[ace-reorder-list-reordering] {
 		[ace-reorder-list-item] {
