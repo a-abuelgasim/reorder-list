@@ -55,8 +55,10 @@ li[ace-reorder-list-item-grabbed] {
 /* stylelint-disable */
 //// ////////////////////////////
 
-[ace-reorder-list-reordering] {
-	[ace-reorder-list-item] {
-		transition: transform $ace-reorder-list-item-trans-time $ace-reorder-list-item-trans-curve;
+@media (prefers-reduced-motion: no-preference) {
+	[ace-reorder-list-reordering] {
+		[ace-reorder-list-item] {
+			transition: transform $ace-reorder-list-item-trans-time $ace-reorder-list-item-trans-curve;
+		}
 	}
 }
