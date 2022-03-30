@@ -46,6 +46,8 @@ export default class ReorderList extends HTMLElement {
 	private ulElTop: number | undefined;
 	private prevSiblingIndex: number | undefined;
 	private nextSiblingIndex: number | undefined;
+	private targetLiElIndex: number | undefined;
+	private liElKbGrabbed = false;
 
 
 	constructor() {
@@ -53,6 +55,8 @@ export default class ReorderList extends HTMLElement {
 
 
 		/* CLASS METHOD BINDINGS */
+		this.focusOutHandler = this.focusOutHandler.bind(this);
+		this.keydownHandler = this.keydownHandler.bind(this);
 		this.endMove = this.endMove.bind(this);
 		this.mouseDownHandler = this.mouseDownHandler.bind(this);
 		this.setNextSiblingMidpoint = this.setNextSiblingMidpoint.bind(this);
@@ -81,6 +85,8 @@ export default class ReorderList extends HTMLElement {
 
 
 		/* ADD EVENT LISTENERS */
+		this.ulEl.addEventListener('focusout', this.focusOutHandler);
+		this.ulEl.addEventListener('keydown', this.keydownHandler);
 		this.ulEl.addEventListener('mousedown', this.mouseDownHandler);
 		window.addEventListener('mouseup', this.endMove);
 
@@ -102,6 +108,77 @@ export default class ReorderList extends HTMLElement {
 		/* REMOVE EVENT LISTENERS */
 		this.ulEl!.removeEventListener('mousedown', this.mouseDownHandler);
 		window.removeEventListener('mouseup', this.endMove);
+	}
+
+
+	private focusOutHandler(e: Event): void {
+		const targetEl = (e.target as Element).closest(`[${ATTRS.BTN}]`);
+		if (!targetEl) {
+			return;
+		}
+
+		this.undoKeyboardMove();
+	}
+
+	private keydownHandler(e: KeyboardEvent): void {
+		const target = e.target as HTMLElement;
+		const parentLiEl = target.closest(`[${ATTRS.ITEM}]`) as HTMLLIElement;
+		if (!parentLiEl) {
+			return;
+		}
+
+		const keydownOnBtn = target.closest(`[${ATTRS.BTN}]`);
+		const parentLiIndex = this.liEls.indexOf(parentLiEl);
+		const keyPressed = e.key;
+		switch(keyPressed) {
+			case 'Escape':
+				this.undoKeyboardMove();
+				break;
+			case ' ':
+			case 'Enter':
+				e.preventDefault();
+				if (!this.liElKbGrabbed && keydownOnBtn) {
+					this.liElKbGrabbed = true;
+					parentLiEl.classList.add('grabbed');
+					this.selectedLiElIndex = parentLiIndex;
+					this.targetLiElIndex = this.selectedLiElIndex;
+					break;
+				}
+				if (this.liElKbGrabbed && parentLiEl) {
+					console.log('finish move', this.targetLiElIndex);
+				}
+				break;
+			case 'ArrowUp':
+			case 'ArrowDown': {
+				const direction = keyPressed == 'ArrowUp' ? -1 : 1;
+				const lastLiElIndex = this.liEls.length - 1;
+				this.targetLiElIndex += direction;
+				if (this.targetLiElIndex < 0) {
+					this.targetLiElIndex = lastLiElIndex;
+				} else if (this.targetLiElIndex > lastLiElIndex) {
+					this.targetLiElIndex = 0;
+				} else if (this.targetLiElIndex == this.selectedLiElIndex) {
+					this.targetLiElIndex += direction;
+				}
+
+				this.liEls.forEach((liEl, index) => {
+					if (index == this.targetLiElIndex) {
+						liEl.classList.add('targeted');
+					} else {
+						liEl.classList.remove('targeted');
+					}
+				});
+				break;
+			}
+		}
+	}
+
+
+	private undoKeyboardMove(): void {
+		this.liEls.forEach((liEl) => {
+			liEl.classList.remove('grabbed', 'targeted');
+			this.liElKbGrabbed = false;
+		});
 	}
 
 

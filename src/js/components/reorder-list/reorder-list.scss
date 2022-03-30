@@ -89,3 +89,15 @@ li[ace-reorder-list-item-grabbed] {
 	transform: translateX(-50%);
 	z-index: 1;
 }
+
+.grabbed {
+	box-shadow: 7px 8px 10px -3px rgba(#000, .82);
+
+	.tooltip {
+		display: none;
+	}
+}
+
+.targeted {
+	background: white;
+}
