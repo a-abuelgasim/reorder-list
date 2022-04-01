@@ -65,37 +65,9 @@ li[ace-reorder-list-item-grabbed] {
 }
 
 
-// KEYBOARD ONLY TOOLTIP
-[ace-reorder-list-item-btn] {
-	position: relative;
-
-	&:not(:focus-visible) {
-		.tooltip {
-			display: none;
-		}
-	}
-}
-
-.tooltip {
-	background: black;
-	bottom: 100%;
-	color: white;
-	padding: 10px;
-	left: 50%;
-	position: absolute;
-	font-size: 14px;
-	width: max-content;
-	max-width: 200px;
-	transform: translateX(-50%);
-	z-index: 1;
-}
-
+// KEYBOARD MOVEMENT STYLES
 .grabbed {
 	box-shadow: 7px 8px 10px -3px rgba(#000, .82);
-
-	.tooltip {
-		display: none;
-	}
 }
 
 .targeted {
