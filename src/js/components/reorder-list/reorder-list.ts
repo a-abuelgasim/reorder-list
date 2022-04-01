@@ -95,6 +95,15 @@ export default class ReorderList extends HTMLElement {
 
 
 		/* INITIALISATION */
+		// Add any initialisation code here
+
+
+		// Dispatch 'ready' event
+		// window.dispatchEvent(new CustomEvent(EVENTS.OUT.READY, {
+		// 	'detail': {
+		// 		'id': this.id,
+		// 	}
+		// }));
 	}
 
 
@@ -183,6 +192,9 @@ export default class ReorderList extends HTMLElement {
 
 
 	private moveSelectedToTarget(): void {
+		if (this.targetLiElIndex > this.selectedLiElIndex) {
+			this.targetLiElIndex += 1;
+		}
 		this.ulEl!.insertBefore(this.selectedLiEl, this.liEls[this.targetLiElIndex]);
 		(this.selectedLiEl.querySelector(`[${ATTRS.BTN}]`) as HTMLButtonElement).focus();
 		this.liEls = [...this.querySelectorAll(`[${ATTRS.ITEM}]`)] as HTMLLIElement[];
@@ -190,8 +202,8 @@ export default class ReorderList extends HTMLElement {
 
 
 	private undoKeyboardMove(): void {
-		this.liElKbGrabbed = false;
 		this.liEls.forEach(liEl => liEl.classList.remove('grabbed', 'targeted'));
+		this.liElKbGrabbed = false;
 	}
 
 
