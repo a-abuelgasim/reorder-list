@@ -1,7 +1,4 @@
 /* IMPORTS */
-// import { NAME } from '../../common/constants.js';
-// import { autoID } from '../../common/functions.js';
-
 const NAME = 'ace';
 
 
@@ -20,9 +17,6 @@ export const ATTRS = {
 
 
 export const EVENTS = {
-// 	IN: {
-// 		INCOMING_EVENT: `${REORDER_LIST}-incoming-event`,
-// 	},
 	OUT: {
 		READY: `${REORDER_LIST}-ready`,
 	},
@@ -72,38 +66,16 @@ export default class ReorderList extends HTMLElement {
 
 	public connectedCallback(): void {
 		console.log('connected Callback');
-		// this.id = this.id || autoID(REORDER_LIST);
 
 		/* GET DOM ELEMENTS */
 		this.ulEl = this.querySelector(`[${ATTRS.LIST}]`) as HTMLUListElement;
 		this.liEls = [...this.querySelectorAll(`[${ATTRS.ITEM}]`)] as HTMLLIElement[];
-
-
-		/* GET DOM DATA */
-		// this.someData = this.getAttribute(ATTRS.ATTR_NAME);
-
-
-		/* SET DOM DATA */
-		// this.setAttribute(ATTRS.ATTR_NAME, 'some-value');
-
 
 		/* ADD EVENT LISTENERS */
 		this.ulEl.addEventListener('focusout', this.focusOutHandler);
 		this.ulEl.addEventListener('keydown', this.keydownHandler);
 		this.ulEl.addEventListener('mousedown', this.mouseDownHandler);
 		window.addEventListener('mouseup', this.endMove);
-
-
-		/* INITIALISATION */
-		// Add any initialisation code here
-
-
-		// Dispatch 'ready' event
-		// window.dispatchEvent(new CustomEvent(EVENTS.OUT.READY, {
-		// 	'detail': {
-		// 		'id': this.id,
-		// 	}
-		// }));
 	}
 
 
