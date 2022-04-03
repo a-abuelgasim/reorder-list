@@ -139,11 +139,17 @@ export default class ReorderList extends HTMLElement {
 				if (keyPressed.includes('Arrow')) {
 					const direction = keyPressed == 'ArrowUp' ? -1 : 1;
 					this.targetLiElIndex += direction;
+					if (this.targetLiElIndex == this.selectedLiElIndex) {
+						this.targetLiElIndex += direction;
+					}
+
 					if (this.targetLiElIndex < 0) {
 						this.targetLiElIndex = lastLiElIndex;
 					} else if (this.targetLiElIndex > lastLiElIndex) {
 						this.targetLiElIndex = 0;
-					} else if (this.targetLiElIndex == this.selectedLiElIndex) {
+					}
+
+					if (this.targetLiElIndex == this.selectedLiElIndex) {
 						this.targetLiElIndex += direction;
 					}
 				} else {
