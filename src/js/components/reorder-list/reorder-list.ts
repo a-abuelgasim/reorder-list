@@ -111,6 +111,7 @@ export default class ReorderList extends HTMLElement {
 		const keydownOnBtn = target.closest(`[${ATTRS.BTN}]`);
 		const parentLiIndex = this.liEls.indexOf(selectedLiEl);
 		const keyPressed = e.key;
+
 		switch(keyPressed) {
 			case 'Escape':
 				this.undoKeyboardMove();
@@ -123,9 +124,9 @@ export default class ReorderList extends HTMLElement {
 				if (!this.liElKbGrabbed && keydownOnBtn) {
 					this.liElKbGrabbed = true;
 					selectedLiEl.classList.add('grabbed');
-					this.liveRegionEl.textContent =
-						`${this.selectedElName} grabbed at position ${this.selectedLiElIndex + 1} of ${this.liEls.length}. Press Up, Down, Home or End keys to navigate to new position. Press Escape to cancel move`;
 					this.selectedLiElIndex = parentLiIndex;
+					this.liveRegionEl.textContent =
+						`${this.selectedElName} grabbed at position ${this.selectedLiElIndex + 1} of ${this.liEls.length}. Press Up or Down arrow keys to navigate to new position. Press Escape to cancel move`;
 					this.selectedLiEl = selectedLiEl;
 					this.targetLiElIndex = this.selectedLiElIndex;
 					break;
