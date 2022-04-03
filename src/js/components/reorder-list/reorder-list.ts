@@ -191,7 +191,6 @@ export default class ReorderList extends HTMLElement {
 		}
 		this.ulEl!.insertBefore(this.selectedLiEl, this.liEls[this.targetLiElIndex]);
 		this.liEls = [...this.querySelectorAll(`[${ATTRS.ITEM}]`)] as HTMLLIElement[];
-
 		this.selectedLiEl.focus();
 	}
 
