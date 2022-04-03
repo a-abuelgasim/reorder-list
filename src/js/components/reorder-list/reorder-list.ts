@@ -15,6 +15,7 @@ export const ATTRS = {
 	ITEM: `${REORDER_LIST}-item`,
 	ITEM_GRABBED: `${REORDER_LIST}-item-grabbed`,
 	LIST: `${REORDER_LIST}-list`,
+	LIVE_REGION: `${REORDER_LIST}-live-region`,
 	REORDERING: `${REORDER_LIST}-reordering`,
 };
 
@@ -48,6 +49,8 @@ export default class ReorderList extends HTMLElement {
 	private nextSiblingIndex: number | undefined;
 	private targetLiElIndex: number | undefined;
 	private liElKbGrabbed = false;
+	private liveRegionEl: HTMLDivElement | undefined;
+	private selectedElName = '';
 
 
 	constructor() {
@@ -77,6 +80,7 @@ export default class ReorderList extends HTMLElement {
 		/* GET DOM ELEMENTS */
 		this.ulEl = this.querySelector(`[${ATTRS.LIST}]`) as HTMLUListElement;
 		this.liEls = [...this.querySelectorAll(`[${ATTRS.ITEM}]`)] as HTMLLIElement[];
+		this.liveRegionEl = this.querySelector(`[${ATTRS.LIVE_REGION}]`);
 
 
 		/* GET DOM DATA */
@@ -130,6 +134,7 @@ export default class ReorderList extends HTMLElement {
 		if (!selectedLiEl) {
 			return;
 		}
+		this.selectedElName = selectedLiEl.querySelector('span').textContent;
 
 		const keydownOnBtn = target.closest(`[${ATTRS.BTN}]`);
 		const parentLiIndex = this.liEls.indexOf(selectedLiEl);
@@ -137,6 +142,8 @@ export default class ReorderList extends HTMLElement {
 		switch(keyPressed) {
 			case 'Escape':
 				this.undoKeyboardMove();
+				this.liveRegionEl.textContent =
+						`${this.selectedElName} move cancelled`;
 				break;
 			case ' ':
 			case 'Enter':
@@ -144,6 +151,8 @@ export default class ReorderList extends HTMLElement {
 				if (!this.liElKbGrabbed && keydownOnBtn) {
 					this.liElKbGrabbed = true;
 					selectedLiEl.classList.add('grabbed');
+					this.liveRegionEl.textContent =
+						`${this.selectedElName} grabbed at position ${this.selectedLiElIndex + 1} of ${this.liEls.length}. Press Up, Down, Home or End keys to navigate to new position. Press Escape to cancel move`;
 					this.selectedLiElIndex = parentLiIndex;
 					this.selectedLiEl = selectedLiEl;
 					this.targetLiElIndex = this.selectedLiElIndex;
@@ -167,16 +176,25 @@ export default class ReorderList extends HTMLElement {
 				if (keyPressed.includes('Arrow')) {
 					const direction = keyPressed == 'ArrowUp' ? -1 : 1;
 					this.targetLiElIndex += direction;
+					if (this.targetLiElIndex == this.selectedLiElIndex) {
+						this.targetLiElIndex += direction;
+					}
+
 					if (this.targetLiElIndex < 0) {
 						this.targetLiElIndex = lastLiElIndex;
 					} else if (this.targetLiElIndex > lastLiElIndex) {
 						this.targetLiElIndex = 0;
-					} else if (this.targetLiElIndex == this.selectedLiElIndex) {
+					}
+
+					if (this.targetLiElIndex == this.selectedLiElIndex) {
 						this.targetLiElIndex += direction;
 					}
 				} else {
 					this.targetLiElIndex = keyPressed == 'Home' ? 0 : lastLiElIndex;
 				}
+
+				this.liveRegionEl.textContent =
+						`You are now at position ${this.targetLiElIndex + 1} of ${this.liEls.length}. Press Enter to drop grabbed item here. Press Escape to cancel move.`;
 
 				this.liEls.forEach((liEl, index) => {
 					if (index == this.targetLiElIndex) {
@@ -192,12 +210,15 @@ export default class ReorderList extends HTMLElement {
 
 
 	private moveSelectedToTarget(): void {
+		const newPosition = this.targetLiElIndex + 1;
 		if (this.targetLiElIndex > this.selectedLiElIndex) {
 			this.targetLiElIndex += 1;
 		}
 		this.ulEl!.insertBefore(this.selectedLiEl, this.liEls[this.targetLiElIndex]);
 		(this.selectedLiEl.querySelector(`[${ATTRS.BTN}]`) as HTMLButtonElement).focus();
 		this.liEls = [...this.querySelectorAll(`[${ATTRS.ITEM}]`)] as HTMLLIElement[];
+		this.liveRegionEl.textContent =
+			`${this.selectedElName} dropped at position ${newPosition}.`;
 	}
 
 
