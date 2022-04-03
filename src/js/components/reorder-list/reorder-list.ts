@@ -183,15 +183,16 @@ export default class ReorderList extends HTMLElement {
 
 
 	private moveSelectedToTarget(): void {
-		const newPosition = this.targetLiElIndex + 1;
+		this.liveRegionEl.textContent =
+			`${this.selectedElName} dropped at position ${this.targetLiElIndex + 1}.`;
+
 		if (this.targetLiElIndex > this.selectedLiElIndex) {
 			this.targetLiElIndex += 1;
 		}
 		this.ulEl!.insertBefore(this.selectedLiEl, this.liEls[this.targetLiElIndex]);
-		(this.selectedLiEl.querySelector(`[${ATTRS.BTN}]`) as HTMLButtonElement).focus();
 		this.liEls = [...this.querySelectorAll(`[${ATTRS.ITEM}]`)] as HTMLLIElement[];
-		this.liveRegionEl.textContent =
-			`${this.selectedElName} dropped at position ${newPosition}.`;
+
+		this.selectedLiEl.focus();
 	}
 
 
