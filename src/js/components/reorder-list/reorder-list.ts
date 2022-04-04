@@ -25,6 +25,9 @@ export const EVENTS = {
 
 /* CLASS */
 export default class ReorderList extends HTMLElement {
+	private static useScrollIntoView =
+		'scrollBehavior' in document.documentElement.style;
+
 	private targetLiElIndex: number | undefined;
 	private liElKbGrabbed = false;
 	private cursorStartPos: number | undefined;
@@ -237,13 +240,13 @@ export default class ReorderList extends HTMLElement {
 			return;
 		}
 
-		if (e instanceof TouchEvent) {
+		if (e.type == 'touchstart') {
 			e.preventDefault();
 		}
 
 		this.moveStarted = true;
-		this.cursorStartPos = e instanceof MouseEvent ?
-			e.pageY:
+		this.cursorStartPos = e.type == 'mousedown' ?
+			(e as MouseEvent).pageY:
 			(e as TouchEvent).touches[0].pageY;
 
 		const ulRect = this.ulEl.getBoundingClientRect();
@@ -317,7 +320,7 @@ export default class ReorderList extends HTMLElement {
 	}
 
 
-	private windowMouseMoveHandler(e: MouseEvent | TouchEvent): void {
+	private windowMouseMoveHandler(e: Event): void {
 		if (
 			this.cursorStartPos == undefined ||
 			this.moveDistance == undefined ||
@@ -340,12 +343,11 @@ export default class ReorderList extends HTMLElement {
 		let movementY;
 		let cursorPos;
 
-		if (e instanceof MouseEvent) {
-			cursorPos = e.pageY;
-			movementY = e.movementY;
+		if (e.type == 'mousemove') {
+			cursorPos = (e as MouseEvent).pageY;
+			movementY = (e as MouseEvent).movementY;
 		} else { //TouchEvent
-			e.preventDefault();
-			const touch = e.touches[0];
+			const touch = (e as TouchEvent).touches[0];
 			cursorPos = touch.pageY;
 			movementY = touch.pageY - (this.previousTouch == undefined ? 0 : this.previousTouch.pageY);
 			this.previousTouch = touch;
@@ -358,7 +360,11 @@ export default class ReorderList extends HTMLElement {
 		// Anchor element Y position to cursor
 		this.selectedLiEl.style.top = `${cursorPos - this.cursorStartPos}px`;
 		// Scroll page with grabbed element
-		if (cursorPos >= this.ulElTop && cursorPos <= this.ulElBottom) {
+		if (
+			ReorderList.useScrollIntoView &&
+			cursorPos >= this.ulElTop &&
+			cursorPos <= this.ulElBottom
+		) {
 			this.selectedLiEl.scrollIntoView({
 				behaviour: 'smooth',
 				block: 'nearest',
