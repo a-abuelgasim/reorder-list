@@ -132,7 +132,7 @@ export default class ReorderList extends HTMLElement {
 			case 'ArrowDown':
 			case 'Home':
 			case 'End': {
-				if (!this.liElKbGrabbed) {
+				if (!this.liElKbGrabbed || this.targetLiElIndex == undefined) {
 					return;
 				}
 
@@ -173,6 +173,10 @@ export default class ReorderList extends HTMLElement {
 
 
 	private moveSelectedToTarget(): void {
+		if (this.targetLiElIndex == undefined || this.selectedLiElIndex == undefined || this.selectedLiEl == undefined) {
+			return;
+		}
+
 		if (this.targetLiElIndex > this.selectedLiElIndex) {
 			this.targetLiElIndex += 1;
 		}
