@@ -1,0 +1,22 @@
+{
+	"compilerOptions": {
+		"baseUrl": ".",
+		"declaration": true,
+		"forceConsistentCasingInFileNames": true,
+		"lib": [
+			"dom",
+			"es2017",
+			"dom.iterable"
+		],
+		"noFallthroughCasesInSwitch": true,
+		"noImplicitAny": true,
+		"noImplicitReturns": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"target": "ES6",
+	},
+	"include": [
+		"src/js/**/*",
+		"src/ace/**/*"
+	]
+}
