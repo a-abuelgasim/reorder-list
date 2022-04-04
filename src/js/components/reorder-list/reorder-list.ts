@@ -25,6 +25,8 @@ export const EVENTS = {
 
 /* CLASS */
 export default class ReorderList extends HTMLElement {
+	private targetLiElIndex: number | undefined;
+	private liElKbGrabbed = false;
 	private cursorStartPos: number | undefined;
 	private liEls: HTMLLIElement[] = [];
 	private moveDistance: number | undefined;
@@ -41,8 +43,6 @@ export default class ReorderList extends HTMLElement {
 	private ulEl: HTMLUListElement | HTMLOListElement | undefined;
 	private ulElBottom: number | undefined;
 	private ulElTop: number | undefined;
-	private targetLiElIndex: number | undefined;
-	private liElKbGrabbed = false;
 
 
 	constructor() {
@@ -50,6 +50,10 @@ export default class ReorderList extends HTMLElement {
 
 
 		/* CLASS METHOD BINDINGS */
+		this.focusOutHandler = this.focusOutHandler.bind(this);
+		this.keydownHandler = this.keydownHandler.bind(this);
+		this.moveSelectedToTarget = this.moveSelectedToTarget.bind(this);
+		this.undoKeyboardMove = this.undoKeyboardMove.bind(this);
 		this.endMove = this.endMove.bind(this);
 		this.mouseDownHandler = this.mouseDownHandler.bind(this);
 		this.setNextSiblingMidpoint = this.setNextSiblingMidpoint.bind(this);
@@ -57,11 +61,6 @@ export default class ReorderList extends HTMLElement {
 		this.translateLiEl = this.translateLiEl.bind(this);
 		this.updateSiblingLiIndexes = this.updateSiblingLiIndexes.bind(this);
 		this.windowMouseMoveHandler = this.windowMouseMoveHandler.bind(this);
-
-		this.focusOutHandler = this.focusOutHandler.bind(this);
-		this.keydownHandler = this.keydownHandler.bind(this);
-		this.moveSelectedToTarget = this.moveSelectedToTarget.bind(this);
-		this.undoKeyboardMove = this.undoKeyboardMove.bind(this);
 	}
 
 
