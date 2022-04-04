@@ -116,6 +116,9 @@ export default class ReorderList extends HTMLElement {
 
 		switch(keyPressed) {
 			case 'Escape':
+				if (!this.liElKbGrabbed) {
+					return;
+				}
 				this.undoKeyboardMove();
 				this.liveRegionEl!.textContent =
 						`${this.selectedElName} move cancelled`;
