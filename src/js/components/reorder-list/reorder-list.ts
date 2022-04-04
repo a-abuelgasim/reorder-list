@@ -74,6 +74,20 @@ export default class ReorderList extends HTMLElement {
 		this.liEls = [...this.querySelectorAll(`[${ATTRS.ITEM}]`)] as HTMLLIElement[];
 
 		/* ADD EVENT LISTENERS */
+		this.ulEl.addEventListener('click', (e: MouseEvent) => {
+			const btnClicked = (e.target as HTMLElement).closest(`[${ATTRS.BTN}]`);
+			const liElClicked = (e.target as HTMLElement).closest(`[${ATTRS.ITEM}]`);
+			if (!liElClicked) {
+				return;
+			}
+
+			if (btnClicked) {
+				alert('clicked on button');
+				return;
+			}
+			alert('clicked on li');
+		});
+
 		this.ulEl.addEventListener('focusout', this.focusOutHandler);
 		this.ulEl.addEventListener('keydown', this.keydownHandler);
 		this.ulEl.addEventListener('mousedown', this.mouseDownHandler);
