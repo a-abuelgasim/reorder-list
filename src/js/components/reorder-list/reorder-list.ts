@@ -113,7 +113,6 @@ export default class ReorderList extends HTMLElement {
 		const keydownOnBtn = target.closest(`[${ATTRS.BTN}]`);
 		const parentLiIndex = this.liEls.indexOf(selectedLiEl);
 		const keyPressed = e.key;
-
 		switch(keyPressed) {
 			case 'Escape':
 				if (!this.liElKbGrabbed) {
@@ -121,7 +120,7 @@ export default class ReorderList extends HTMLElement {
 				}
 				this.undoKeyboardMove();
 				this.liveRegionEl!.textContent =
-						`${this.selectedElName} move cancelled`;
+					`${this.selectedElName} move cancelled`;
 				break;
 			case ' ':
 			case 'Enter':
@@ -172,7 +171,7 @@ export default class ReorderList extends HTMLElement {
 				}
 
 				this.liveRegionEl!.textContent =
-						`You are now at position ${this.targetLiElIndex + 1} of ${this.liEls.length}. Press Enter to drop grabbed item here. Press Escape to cancel move.`;
+					`You are now at position ${this.targetLiElIndex + 1} of ${this.liEls.length}. Press Enter to drop grabbed item here. Press Escape to cancel move.`;
 
 				this.liEls.forEach((liEl, index) => {
 					if (index == this.targetLiElIndex) {
