@@ -110,6 +110,9 @@ export default class ReorderList extends HTMLElement {
 		const keyPressed = e.key;
 		switch(keyPressed) {
 			case 'Escape':
+				if (!this.liElKbGrabbed) {
+					return;
+				}
 				this.undoKeyboardMove();
 				break;
 			case ' ':
