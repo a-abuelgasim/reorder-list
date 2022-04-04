@@ -30,7 +30,10 @@ export default class ReorderList extends HTMLElement {
 	private moveDistance: number | undefined;
 	private moveStarted = false;
 	private movingLiEls = false;
+	private nextSiblingIndex: number | undefined;
 	private nextSiblingMidpoint: number | undefined;
+	private previousTouch: Touch | undefined;
+	private prevSiblingIndex: number | undefined;
 	private prevSiblingMidpoint: number | undefined;
 	private selectedLiEl: HTMLLIElement | undefined;
 	private selectedLiElIndex: number | undefined;
@@ -38,8 +41,6 @@ export default class ReorderList extends HTMLElement {
 	private ulEl: HTMLUListElement | HTMLOListElement | undefined;
 	private ulElBottom: number | undefined;
 	private ulElTop: number | undefined;
-	private prevSiblingIndex: number | undefined;
-	private nextSiblingIndex: number | undefined;
 
 
 	constructor() {
@@ -58,22 +59,24 @@ export default class ReorderList extends HTMLElement {
 
 
 	public connectedCallback(): void {
-		console.log('connected Callback');
-
 		/* GET DOM ELEMENTS */
 		this.ulEl = this.querySelector(`[${ATTRS.LIST}]`) as HTMLUListElement;
 		this.liEls = [...this.querySelectorAll(`[${ATTRS.ITEM}]`)] as HTMLLIElement[];
 
 		/* ADD EVENT LISTENERS */
 		this.ulEl.addEventListener('mousedown', this.mouseDownHandler);
+		this.ulEl.addEventListener('touchstart', this.mouseDownHandler);
 		window.addEventListener('mouseup', this.endMove);
+		window.addEventListener('touchend', this.endMove);
 	}
 
 
 	public disconnectedCallback(): void {
 		/* REMOVE EVENT LISTENERS */
 		this.ulEl!.removeEventListener('mousedown', this.mouseDownHandler);
+		this.ulEl!.removeEventListener('touchstart', this.mouseDownHandler);
 		window.removeEventListener('mouseup', this.endMove);
+		window.removeEventListener('touchend', this.endMove);
 	}
 
 
@@ -98,7 +101,10 @@ export default class ReorderList extends HTMLElement {
 		this.selectedLiEl.style.top = '';
 
 		this.moveStarted = false;
+		this.previousTouch = undefined;
+
 		window.removeEventListener('mousemove', this.windowMouseMoveHandler);
+		window.removeEventListener('touchmove', this.windowMouseMoveHandler);
 	}
 
 
@@ -117,8 +123,14 @@ export default class ReorderList extends HTMLElement {
 			return;
 		}
 
+		if (e instanceof TouchEvent) {
+			e.preventDefault();
+		}
+
 		this.moveStarted = true;
-		this.cursorStartPos = (e as MouseEvent).pageY;
+		this.cursorStartPos = e instanceof MouseEvent ?
+			e.pageY:
+			(e as TouchEvent).touches[0].pageY;
 
 		const ulRect = this.ulEl.getBoundingClientRect();
 		this.ulElTop = ulRect.top + window.scrollY;
@@ -140,6 +152,7 @@ export default class ReorderList extends HTMLElement {
 		this.moveDistance = this.selectedLiEl.offsetHeight + parseInt(selectedLiElStyles.marginTop) + parseInt(selectedLiElStyles.marginBottom);
 
 		window.addEventListener('mousemove', this.windowMouseMoveHandler);
+		window.addEventListener('touchmove', this.windowMouseMoveHandler);
 	}
 
 
@@ -161,7 +174,6 @@ export default class ReorderList extends HTMLElement {
 			this.prevSiblingMidpoint = prevSiblingRect.top + window.scrollY + prevSiblingRect.height / 2;
 		}
 	}
-
 
 
 	private translateLiEl(index: number, translateVal: number): void {
@@ -191,11 +203,7 @@ export default class ReorderList extends HTMLElement {
 	}
 
 
-	private windowMouseMoveHandler(e: MouseEvent): void {
-		if (this.movingLiEls || !this.selectedLiEl) {
-			return;
-		}
-
+	private windowMouseMoveHandler(e: MouseEvent | TouchEvent): void {
 		if (
 			this.cursorStartPos == undefined ||
 			this.moveDistance == undefined ||
@@ -211,14 +219,29 @@ export default class ReorderList extends HTMLElement {
 			return;
 		}
 
-		const movementY = e.movementY;
+		if (this.movingLiEls || !this.selectedLiEl) {
+			return;
+		}
+
+		let movementY;
+		let cursorPos;
+
+		if (e instanceof MouseEvent) {
+			cursorPos = e.pageY;
+			movementY = e.movementY;
+		} else { //TouchEvent
+			e.preventDefault();
+			const touch = e.touches[0];
+			cursorPos = touch.pageY;
+			movementY = touch.pageY - (this.previousTouch == undefined ? 0 : this.previousTouch.pageY);
+			this.previousTouch = touch;
+		}
+
 		if (movementY == 0) {
 			return;
 		}
 
-		const cursorPos = e.pageY;
-
-		// Anchor element to move pointer
+		// Anchor element Y position to cursor
 		this.selectedLiEl.style.top = `${cursorPos - this.cursorStartPos}px`;
 		// Scroll page with grabbed element
 		if (cursorPos >= this.ulElTop && cursorPos <= this.ulElBottom) {
