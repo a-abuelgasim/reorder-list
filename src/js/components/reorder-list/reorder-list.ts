@@ -167,6 +167,12 @@ export default class ReorderList extends HTMLElement {
 				this.liEls.forEach((liEl, index) => {
 					if (index == this.targetLiElIndex) {
 						liEl.classList.add('targeted');
+						if (ReorderList.useScrollIntoView) {
+							liEl.scrollIntoView({
+								behaviour: 'smooth',
+								block: 'nearest',
+							} as ScrollIntoViewOptions);
+						}
 					} else {
 						liEl.classList.remove('targeted');
 					}
