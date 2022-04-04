@@ -85,10 +85,10 @@ export default class ReorderList extends HTMLElement {
 			}
 
 			if (btnClicked) {
-				alert('clicked on button');
+				alert((e as any).pointerType);
 				return;
 			}
-			alert('clicked on li');
+			console.log('clicked on li', e);
 		});
 
 		this.ulEl.addEventListener('focusout', this.focusOutHandler);
