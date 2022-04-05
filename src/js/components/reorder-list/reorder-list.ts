@@ -207,7 +207,6 @@ export default class ReorderList extends HTMLElement {
 			this.targetLiElIndex += 1;
 		}
 		this.ulEl!.insertBefore(this.selectedLiEl, this.liEls[this.targetLiElIndex]);
-		window.getComputedStyle(this.ulEl!, null);
 		this.liEls = [...this.querySelectorAll(`[${ATTRS.ITEM}]`)] as HTMLLIElement[];
 		this.selectedLiEl.focus();
 	}
