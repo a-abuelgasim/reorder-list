@@ -9,6 +9,7 @@ export const REORDER_LIST = `${NAME}-reorder-list`;
 /* CONSTANTS */
 export const ATTRS = {
 	BTN: `${REORDER_LIST}-item-btn`,
+	FOCUS_DUMMY: `${REORDER_LIST}-focus-dummy`,
 	ITEM: `${REORDER_LIST}-item`,
 	ITEM_GRABBED: `${REORDER_LIST}-item-grabbed`,
 	LIST: `${REORDER_LIST}-list`,
@@ -49,6 +50,7 @@ export default class ReorderList extends HTMLElement {
 	private ulEl: HTMLUListElement | HTMLOListElement | undefined;
 	private ulElBottom: number | undefined;
 	private ulElTop: number | undefined;
+	private focusDummyEl: HTMLDivElement | undefined;
 
 
 	constructor() {
@@ -73,6 +75,7 @@ export default class ReorderList extends HTMLElement {
 	public connectedCallback(): void {
 		/* GET DOM ELEMENTS */
 		this.liveRegionEl = this.querySelector(`[${ATTRS.LIVE_REGION}]`) as HTMLDivElement;
+		this.focusDummyEl = this.querySelector(`[${ATTRS.FOCUS_DUMMY}]`) as HTMLDivElement;
 		this.ulEl = this.querySelector(`[${ATTRS.LIST}]`) as HTMLUListElement;
 		this.liEls = [...this.querySelectorAll(`[${ATTRS.ITEM}]`)] as HTMLLIElement[];
 
@@ -214,16 +217,22 @@ export default class ReorderList extends HTMLElement {
 			return;
 		}
 
-		this.liveRegionEl!.textContent =
-			`${this.selectedElName} dropped at position ${this.targetLiElIndex + 1}.`;
-
 		if (this.targetLiElIndex > this.selectedLiElIndex) {
 			this.targetLiElIndex += 1;
 		}
 		this.ulEl!.insertBefore(this.selectedLiEl, this.liEls[this.targetLiElIndex]);
-		window.getComputedStyle(this.ulEl!, null);
 		this.liEls = [...this.querySelectorAll(`[${ATTRS.ITEM}]`)] as HTMLLIElement[];
-		this.selectedLiEl.focus();
+
+		// Hack to update SR list numbering
+		this.focusDummyEl!.focus(); // Move focus away from list to reset announced numbering (e.g. "1 of 10")
+		setTimeout(() => { // Timeout needed to wait for focus to actually change to focusDummyEl
+			this.selectedLiEl!.focus(); // Move focus back to moved element
+			setTimeout(() => { // Second timeout needed to wait before updating aria-live region content so it's announced
+				this.liveRegionEl!.textContent =
+					`${this.selectedElName} dropped at position ${this.targetLiElIndex! + 1}.`;
+			}, 100);
+		}, 0);
+
 	}
 
 
