@@ -11,6 +11,7 @@
 
 <body>
 	<ace-reorder-list>
+		<!-- A11y assistive elements -->
 		<div
 				aria-hidden="true"
 				class="sr-only"
@@ -30,6 +31,14 @@
 				aria-live="assertive"
 				class="sr-only">
 		</div>
+
+		<div
+				ace-reorder-list-focus-dummy
+				aria-hidden="true"
+				class="sr-only"
+				tabindex="-1">
+		</div>
+		<!-- ---------------- -->
 
 		<ul
 				ace-reorder-list-list
