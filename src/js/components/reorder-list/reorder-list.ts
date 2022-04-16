@@ -27,9 +27,8 @@ export const EVENTS = {
 
 /* CLASS */
 export default class ReorderList extends HTMLElement {
-	private static useScrollIntoView =
-		'scrollBehavior' in document.documentElement.style;
-
+	private static useScrollIntoView = 'scrollBehavior' in document.documentElement.style;
+	private static deviceHasTouchScreen = window.matchMedia('(pointer: coarse)').matches;
 	private liveRegionEl: HTMLDivElement | undefined;
 	private selectedElName = '';
 	private targetLiElIndex: number | undefined;
@@ -51,6 +50,7 @@ export default class ReorderList extends HTMLElement {
 	private ulElBottom: number | undefined;
 	private ulElTop: number | undefined;
 	private focusDummyEl: HTMLDivElement | undefined;
+	private itemGrabbed = false;
 
 
 	constructor() {
@@ -69,6 +69,11 @@ export default class ReorderList extends HTMLElement {
 		this.translateLiEl = this.translateLiEl.bind(this);
 		this.updateSiblingLiIndexes = this.updateSiblingLiIndexes.bind(this);
 		this.windowMouseMoveHandler = this.windowMouseMoveHandler.bind(this);
+		this.dropItem = this.dropItem.bind(this);
+	}
+
+	private dropItem(): void {
+		this.itemGrabbed = false;
 	}
 
 
@@ -79,19 +84,33 @@ export default class ReorderList extends HTMLElement {
 		this.ulEl = this.querySelector(`[${ATTRS.LIST}]`) as HTMLUListElement;
 		this.liEls = [...this.querySelectorAll(`[${ATTRS.ITEM}]`)] as HTMLLIElement[];
 
+
 		/* ADD EVENT LISTENERS */
-		this.ulEl.addEventListener('click', (e: MouseEvent) => {
+		this.ulEl.addEventListener('pointerdown', (e) => {
+			console.log('pointerdown');
+			const deviceHasTouchScreen = ReorderList.deviceHasTouchScreen;
 			const btnClicked = (e.target as HTMLElement).closest(`[${ATTRS.BTN}]`);
 			const liElClicked = (e.target as HTMLElement).closest(`[${ATTRS.ITEM}]`);
 			if (!liElClicked) {
 				return;
 			}
 
-			if (btnClicked) {
-				alert((e as any).pointerType);
+			const pointerType = e.pointerType;
+			if (btnClicked && pointerType == 'mouse' && deviceHasTouchScreen) {
+				this.itemGrabbed = true;
+				this.ulEl!.addEventListener('mousemove', this.dropItem, { once: true });
+				this.ulEl!.addEventListener('touchmove', this.dropItem, { once: true });
+				this.ulEl!.addEventListener('pointermove', this.dropItem, { once: true });
 				return;
 			}
-			console.log('clicked on li', e);
+
+			if (!btnClicked && this.itemGrabbed && pointerType == 'touch' && deviceHasTouchScreen) {
+				this.ulEl!.removeEventListener('mousemove', this.dropItem);
+				this.ulEl!.removeEventListener('touchmove', this.dropItem);
+				this.ulEl!.removeEventListener('pointermove', this.dropItem);
+				this.itemGrabbed = false;
+				alert('great success');
+			}
 		});
 
 		this.ulEl.addEventListener('focusout', this.focusOutHandler);
@@ -144,7 +163,7 @@ export default class ReorderList extends HTMLElement {
 				break;
 			case ' ':
 			case 'Enter':
-				e.preventDefault();
+				// e.preventDefault();
 				if (!this.liElKbGrabbed && keydownOnBtn) {
 					this.liElKbGrabbed = true;
 					selectedLiEl.classList.add('grabbed');
