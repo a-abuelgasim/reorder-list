@@ -32,13 +32,13 @@ enum Sibling {
 /* CLASS */
 export default class ReorderList extends HTMLElement {
 	private liEls: HTMLLIElement[] = [];
-	private ulEl: HTMLUListElement | HTMLOListElement | undefined;
+	private listEl: HTMLUListElement | HTMLOListElement | undefined;
 	private grabbedItemEl: HTMLLIElement | null = null;
 	private grabbedItemIndex: number | null = null;
 	private destinationIndex: number | null = null;
 	private cursorStartPos: number | undefined;
-	private ulElBottom: number | undefined;
-	private ulElTop: number | undefined;
+	private listElTop: number | undefined;
+	private listElBottom: number | undefined;
 	private grabbedItemElHeight: number | undefined;
 	private nextSiblingIndex: number | undefined;
 	private prevSiblingIndex: number | undefined;
@@ -65,12 +65,12 @@ export default class ReorderList extends HTMLElement {
 		this.getLiEls = this.getLiEls.bind(this);
 		this.grabItem = this.grabItem.bind(this);
 		this.resetGrab = this.resetGrab.bind(this);
-		this.getElementsDimensions = this.getElementsDimensions.bind(this);
 		this.pointerDownHandler = this.pointerDownHandler.bind(this);
 		this.storeNextSibling = this.storeNextSibling.bind(this);
 		this.storePrevSibling = this.storePrevSibling.bind(this);
 		this.getSiblingData = this.getSiblingData.bind(this);
 		this.pointerMoveHandler = this.pointerMoveHandler.bind(this);
+		this.touchStartHandler = this.touchStartHandler.bind(this);
 		// this.endMove = this.endMove.bind(this);
 		// this.mouseDownHandler = this.mouseDownHandler.bind(this);
 		// this.setNextSiblingMidpoint = this.setNextSiblingMidpoint.bind(this);
@@ -83,14 +83,15 @@ export default class ReorderList extends HTMLElement {
 
 	public connectedCallback(): void {
 		/* GET DOM ELEMENTS */
-		this.ulEl = this.querySelector(`[${ATTRS.LIST}]`) as HTMLUListElement;
+		this.listEl = this.querySelector(`[${ATTRS.LIST}]`) as HTMLUListElement | HTMLOListElement;
 		this.liEls = this.getLiEls();
 
 
 		/* ADD EVENT LISTENERS */
-		this.ulEl.addEventListener('pointerdown', this.pointerDownHandler);
-		// this.ulEl.addEventListener('mousedown', this.mouseDownHandler);
-		// this.ulEl.addEventListener('touchstart', this.mouseDownHandler);
+		this.listEl.addEventListener('pointerdown', this.pointerDownHandler, { passive: false });
+		this.listEl.addEventListener('touchstart', this.touchStartHandler);
+		// this.listEl.addEventListener('mousedown', this.mouseDownHandler);
+		// this.listEl.addEventListener('touchstart', this.mouseDownHandler);
 		// window.addEventListener('mouseup', this.endMove);
 		// window.addEventListener('touchend', this.endMove);
 	}
@@ -98,17 +99,24 @@ export default class ReorderList extends HTMLElement {
 
 	public disconnectedCallback(): void {
 		/* REMOVE EVENT LISTENERS */
-		this.ulEl?.removeEventListener('pointerdown', this.pointerDownHandler);
-		// this.ulEl!.removeEventListener('mousedown', this.mouseDownHandler);
-		// this.ulEl!.removeEventListener('touchstart', this.mouseDownHandler);
+		this.listEl?.removeEventListener('pointerdown', this.pointerDownHandler);
+		this.listEl?.removeEventListener('touchstart', this.touchStartHandler);
+		// this.listEl!.removeEventListener('mousedown', this.mouseDownHandler);
+		// this.listEl!.removeEventListener('touchstart', this.mouseDownHandler);
 		// window.removeEventListener('mouseup', this.endMove);
 		// window.removeEventListener('touchend', this.endMove);
 	}
 
+	/*
+		Get all the list items
+	*/
 	private getLiEls(): HTMLLIElement[] {
 		return [...this.querySelectorAll(`[${ATTRS.ITEM}]`)] as HTMLLIElement[];
 	}
 
+	/*
+		Grab element and optionally add GRABBED_ITEM attribute
+	*/
 	private grabItem(element: HTMLLIElement, setGrabbedAttribute = true): void {
 		this.grabbedItemEl = element;
 		const index = this.liEls.indexOf(element);
@@ -119,10 +127,13 @@ export default class ReorderList extends HTMLElement {
 			return;
 		}
 
-		this.ulEl!.setAttribute(ATTRS.REORDERING, '');
+		this.listEl!.setAttribute(ATTRS.REORDERING, '');
 		this.grabbedItemEl.setAttribute(ATTRS.GRABBED_ITEM, '');
 	}
 
+	/*
+		Reset grabbed item state and remove GRABBED_ITEM attribute
+	*/
 	private resetGrab(): void {
 		this.grabbedItemEl?.removeAttribute(ATTRS.GRABBED_ITEM);
 		this.grabbedItemEl = null;
@@ -130,26 +141,36 @@ export default class ReorderList extends HTMLElement {
 		this.destinationIndex = null;
 	}
 
-	private pointerDownHandler(event: Event): void {
-		const e = event as PointerEvent;
-		if (e.pointerType == 'touch') {
+	/*
+	  Prevent page scrolling while dragging item
+	*/
+	private touchStartHandler(e: Event): void {
+		const reorderBtnClicked = (e.target as Element).closest(`[${ATTRS.BTN}]`);
+		if (reorderBtnClicked) {
 			e.preventDefault();
 		}
+	}
 
-		const targetEl = e.target as Element;
-		const reorderBtnClicked = targetEl.closest(`[${ATTRS.BTN}]`);
+	/*
+		Handle pointer down events
+	*/
+	private pointerDownHandler(event: Event): void {
+		const targetEl = event.target as Element;
 		const itemToGrabEl = targetEl.closest(`[${ATTRS.ITEM}]`) as HTMLLIElement;
+		const reorderBtnClicked = itemToGrabEl.querySelector(`[${ATTRS.BTN}]`);
 		if (!reorderBtnClicked || !itemToGrabEl) {
 			return;
 		}
 
+		const e = event as PointerEvent;
 		this.cursorStartPos = e.pageY;
 		this.grabItem(itemToGrabEl);
-		if (!this.grabbedItemIndex && this.grabbedItemIndex != 0) {
+		if (!this.grabbedItemEl || (!this.grabbedItemIndex && this.grabbedItemIndex != 0)) {
 			return;
 		}
 
-		this.getElementsDimensions();
+		[this.listElTop, this.listElBottom] = ReorderList.getListBounds(this.listEl!);
+		this.grabbedItemElHeight = ReorderList.getItemHeight(this.grabbedItemEl);
 
 		this.storePrevSibling(this.grabbedItemIndex);
 		this.storeNextSibling(this.grabbedItemIndex);
@@ -157,14 +178,26 @@ export default class ReorderList extends HTMLElement {
 		window.addEventListener('pointermove', this.pointerMoveHandler);
 	}
 
-	private getElementsDimensions(): void {
-		const ulRect = this.ulEl!.getBoundingClientRect();
-		this.ulElTop = ulRect.top + window.scrollY;
-		this.ulElBottom = ulRect.bottom + window.scrollY;
+	/*
+		Get the top and bottom Y-coordinates of the listEl
+	*/
+	private static getListBounds(listEl: HTMLUListElement | HTMLOListElement): [number, number] {
+		const ulRect = listEl.getBoundingClientRect();
+		const top = ulRect.top + window.scrollY;
+		const bottom = ulRect.bottom + window.scrollY;
+		return [top, bottom];
+	}
 
+	/*
+		Get the total height of the grabbed item
+	*/
+	private static getItemHeight(itemEl: HTMLLIElement): number {
 		// We can replace this with just selectedLiEl.offsetHeight if we force li elements to have no margin, use inner element and padding instead
-		const selectedLiElStyles = window.getComputedStyle(this.grabbedItemEl!);
-		this.grabbedItemElHeight = this.grabbedItemEl!.offsetHeight + parseInt(selectedLiElStyles.marginTop) + parseInt(selectedLiElStyles.marginBottom);
+		const selectedLiElStyles = window.getComputedStyle(itemEl);
+		const topMargin = parseInt(selectedLiElStyles.marginTop);
+		const bottomMargin = parseInt(selectedLiElStyles.marginBottom);
+		const height = itemEl!.offsetHeight + topMargin + bottomMargin;
+		return height;
 	}
 
 	private storePrevSibling(itemIndex: number): void {
