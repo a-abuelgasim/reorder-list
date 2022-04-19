@@ -34,16 +34,9 @@ li {
 	}
 }
 
-li[ace-reorder-list-grabbed-item] {
+[ace-reorder-list-grabbed-item] {
 	$ace-reorder-list-grabbed-item-box-shadow: 7px 8px 10px -3px rgba(#000, .82);
 	box-shadow: $ace-reorder-list-grabbed-item-box-shadow;
-}
-
-[ace-reorder-list-item-btn] {
-	cursor: grab;
-}
-
-[ace-reorder-list-grabbed-item] {
 	position: relative;
 	z-index: $ace-reorder-list-grabbed-item-z-index;
 
@@ -52,8 +45,10 @@ li[ace-reorder-list-grabbed-item] {
 	}
 }
 
-/* stylelint-disable */
-//// ////////////////////////////
+[ace-reorder-list-item-btn] {
+	cursor: grab;
+}
+
 
 [ace-reorder-list-reordering] {
 	[ace-reorder-list-item] {

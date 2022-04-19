@@ -1,9 +1,8 @@
-/* IMPORTS */
-const NAME = 'ace';
+const useScrollIntoView = (): boolean => 'scrollBehavior' in document.documentElement.style;
 
 
 /* COMPONENT NAME */
-export const REORDER_LIST = `${NAME}-reorder-list`;
+export const REORDER_LIST = `ace-reorder-list`;
 
 
 /* CONSTANTS */
@@ -15,20 +14,6 @@ export const ATTRS = {
 	REORDERING: `${REORDER_LIST}-reordering`,
 };
 
-
-export const EVENTS = {
-	OUT: {
-		READY: `${REORDER_LIST}-ready`,
-	},
-};
-
-
-enum Sibling {
-	Prev,
-	Next,
-}
-
-const useScrollIntoView = (): boolean => 'scrollBehavior' in document.documentElement.style;
 
 
 /* CLASS */
@@ -53,7 +38,6 @@ export default class ReorderList extends HTMLElement {
 
 
 		/* CLASS METHOD BINDINGS */
-		this.getLiEls = this.getLiEls.bind(this);
 		this.grabItem = this.grabItem.bind(this);
 		this.resetMove = this.resetMove.bind(this);
 		this.pointerDownHandler = this.pointerDownHandler.bind(this);
@@ -69,7 +53,7 @@ export default class ReorderList extends HTMLElement {
 	public connectedCallback(): void {
 		/* GET DOM ELEMENTS */
 		this.listEl = this.querySelector(`[${ATTRS.LIST}]`) as HTMLUListElement | HTMLOListElement;
-		this.liEls = this.getLiEls();
+		this.liEls = [...this.querySelectorAll(`[${ATTRS.ITEM}]`)] as HTMLLIElement[];
 
 
 		/* ADD EVENT LISTENERS */
@@ -101,7 +85,7 @@ export default class ReorderList extends HTMLElement {
 
 
 	/*
-		Get the total height of the grabbed item
+		Get the total height of the grabbed item including vertical margins
 	*/
 	private getItemHeight(itemEl: HTMLLIElement): number {
 		// We can replace this with just selectedLiEl.offsetHeight if we force li elements to have no margin, use inner element and padding instead
@@ -114,7 +98,7 @@ export default class ReorderList extends HTMLElement {
 
 
 	/*
-		Get the top and bottom Y-coordinates of the listEl
+		Get the top and bottom position of listEl
 	*/
 	private getListBounds(listEl: HTMLUListElement | HTMLOListElement): [number, number] {
 		const ulRect = listEl.getBoundingClientRect();
@@ -125,37 +109,26 @@ export default class ReorderList extends HTMLElement {
 
 
 	/*
-		Get all the list items
-	*/
-	private getLiEls(): HTMLLIElement[] {
-		return [...this.querySelectorAll(`[${ATTRS.ITEM}]`)] as HTMLLIElement[];
-	}
-
-
-	/*
-		Get the next sibling midpoint of a sibling at a given index and position (previous or next)
+		Get midpoint of sibling at given index. Returns Number.POSITIVE_INFINITY if there's no item at given index.
 	*/
 	private getNextSiblingMidpoint(siblingIndex: number): number {
-		return this.getSiblingMidpoint(this.liEls[siblingIndex], Sibling.Next);
+		return this.getSiblingMidpoint(this.liEls[siblingIndex], true);
 	}
 
 
 	/*
-		Get the previous sibling midpoint of a sibling at a given index and position (previous or next)
+		Get midpoint of sibling at given index. Returns Number.NEGATIVE_INFINITY if there's no item at given index.
 	*/
 	private getPrevSiblingMidpoint(siblingIndex: number): number {
-		return this.getSiblingMidpoint(this.liEls[siblingIndex], Sibling.Prev);
+		return this.getSiblingMidpoint(this.liEls[siblingIndex]);
 	}
 
 
 	/*
-		Get the midpoint of a sibling at a given index and position (previous or next)
+		Get the midpoint of a given sibling element based on it's position (previous or next)
 	*/
-	private getSiblingMidpoint(siblingEl: HTMLLIElement, position: Sibling): number {
-		let siblingMidpoint = position == Sibling.Prev ?
-			Number.NEGATIVE_INFINITY :
-			Number.POSITIVE_INFINITY;
-
+	private getSiblingMidpoint(siblingEl: HTMLLIElement, isNextSibling = true): number {
+		let siblingMidpoint = isNextSibling ?	Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY;
 		if (siblingEl) {
 			const siblingRect = siblingEl.getBoundingClientRect();
 			siblingMidpoint = siblingRect.top + window.scrollY + siblingRect.height / 2;
@@ -165,14 +138,14 @@ export default class ReorderList extends HTMLElement {
 
 
 	/*
-		Grab element and optionally add GRABBED_ITEM attribute
+		Grab element and optionally add grabbed styles
 	*/
-	private grabItem(element: HTMLLIElement, setGrabbedAttribute = true): void {
+	private grabItem(element: HTMLLIElement, setGrabbedStyles = true): void {
 		this.grabbedItemEl = element;
 		const index = this.liEls.indexOf(element);
 		this.grabbedItemIndex = index;
 
-		if (!setGrabbedAttribute) {
+		if (!setGrabbedStyles) {
 			return;
 		}
 
@@ -182,7 +155,7 @@ export default class ReorderList extends HTMLElement {
 
 
 	/*
-		Handle pointer down events on list
+		Handle pointerdown events on list
 	*/
 	private pointerDownHandler(event: Event): void {
 		const targetEl = event.target as Element;
@@ -209,7 +182,7 @@ export default class ReorderList extends HTMLElement {
 
 
 	/*
-		Handle pointer move events on window
+		Handle pointermove events on window
 	*/
 	private pointerMoveHandler(event: Event): void {
 		if (this.movingLiEls) {
@@ -284,7 +257,7 @@ export default class ReorderList extends HTMLElement {
 
 
 	/*
-		Handle pointer up events on list
+		Handle pointerup events on window
 	*/
 	private pointerUpHandler(): void {
 		if (!this.grabbedItemEl || (!this.grabbedItemIndex && this.grabbedItemIndex != 0)) {
@@ -307,7 +280,7 @@ export default class ReorderList extends HTMLElement {
 
 
 	/*
-		Reset grabbed item state and remove GRABBED_ITEM attribute
+		Reset grabbed item state
 	*/
 	private resetMove(): void {
 		this.grabbedItemEl = null;
@@ -317,7 +290,7 @@ export default class ReorderList extends HTMLElement {
 
 
 	/*
-	  Prevent page scrolling while dragging item
+	  Prevent page scrolling while dragging item on touchscreens
 	*/
 	private touchStartHandler(e: Event): void {
 		const reorderBtnClicked = (e.target as Element).closest(`[${ATTRS.BTN}]`);
@@ -328,7 +301,7 @@ export default class ReorderList extends HTMLElement {
 
 
 	/*
-		Translate the li at a given index by a given number of pixels
+		Translate given liEl in Y-axis by a given value
 	*/
 	private translateLiEl(liEl: HTMLLIElement, translateVal: number): void {
 		const currentTransform = liEl.style.transform;
@@ -339,7 +312,7 @@ export default class ReorderList extends HTMLElement {
 
 
 	/*
-		Update the sibling indexes based on a given direction or movement
+		Update sibling indexes based on a given direction of movement
 	*/
 	private updateSiblingIndexes(moveDirection: -1 | 1): void {
 		if (this.nextSiblingIndex == undefined || this.prevSiblingIndex == undefined) {
@@ -360,6 +333,7 @@ export default class ReorderList extends HTMLElement {
 		}
 	}
 }
+
 
 
 /* REGISTER CUSTOM ELEMENT */
