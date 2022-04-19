@@ -40,16 +40,15 @@ export default class ReorderList extends HTMLElement {
 
 
 		/* CLASS METHOD BINDINGS */
-		this.grabItem = this.grabItem.bind(this);
-		this.resetMove = this.resetMove.bind(this);
-		this.pointerDownHandler = this.pointerDownHandler.bind(this);
-		this.getPrevSiblingMidpoint = this.getPrevSiblingMidpoint.bind(this);
-		this.getNextSiblingMidpoint = this.getNextSiblingMidpoint.bind(this);
-		this.pointerMoveHandler = this.pointerMoveHandler.bind(this);
-		this.updateSiblingIndexes = this.updateSiblingIndexes.bind(this);
-		this.pointerUpHandler = this.pointerUpHandler.bind(this);
 		this.dropGrabbedEl = this.dropGrabbedEl.bind(this);
-		this.keydownHandler = this.keydownHandler.bind(this);
+		this.getNextSiblingMidpoint = this.getNextSiblingMidpoint.bind(this);
+		this.getPrevSiblingMidpoint = this.getPrevSiblingMidpoint.bind(this);
+		this.grabItem = this.grabItem.bind(this);
+		this.pointerDownHandler = this.pointerDownHandler.bind(this);
+		this.pointerMoveHandler = this.pointerMoveHandler.bind(this);
+		this.pointerUpHandler = this.pointerUpHandler.bind(this);
+		this.resetMove = this.resetMove.bind(this);
+		this.updateSiblingIndexes = this.updateSiblingIndexes.bind(this);
 	}
 
 
