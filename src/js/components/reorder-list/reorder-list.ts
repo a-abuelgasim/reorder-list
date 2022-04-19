@@ -31,11 +31,12 @@ enum Sibling {
 
 /* CLASS */
 export default class ReorderList extends HTMLElement {
+	private static useScrollIntoView = 'scrollBehavior' in document.documentElement.style;
 	private liEls: HTMLLIElement[] = [];
 	private listEl: HTMLUListElement | HTMLOListElement | undefined;
 	private grabbedItemEl: HTMLLIElement | null = null;
 	private grabbedItemIndex: number | null = null;
-	private destinationIndex: number | null = null;
+	private moveDiff = 0;
 	private cursorStartPos: number | undefined;
 	private listElTop: number | undefined;
 	private listElBottom: number | undefined;
@@ -44,18 +45,7 @@ export default class ReorderList extends HTMLElement {
 	private prevSiblingIndex: number | undefined;
 	private nextSiblingMidpoint: number | undefined;
 	private prevSiblingMidpoint: number | undefined;
-
-
-	// private static useScrollIntoView =
-	// 	'scrollBehavior' in document.documentElement.style;
-
-	// private moveDistance: number | undefined;
-	// private moveStarted = false;
-	// private movingLiEls = false;
-	// private previousTouch: Touch | undefined;
-	// private selectedLiEl: HTMLLIElement | undefined;
-	// private selectedLiElIndex: number | undefined;
-	// private selectedLiElIndexDiff: number | undefined;
+	private movingLiEls = false;
 
 	constructor() {
 		super();
@@ -64,20 +54,14 @@ export default class ReorderList extends HTMLElement {
 		/* CLASS METHOD BINDINGS */
 		this.getLiEls = this.getLiEls.bind(this);
 		this.grabItem = this.grabItem.bind(this);
-		this.resetGrab = this.resetGrab.bind(this);
+		this.resetMove = this.resetMove.bind(this);
 		this.pointerDownHandler = this.pointerDownHandler.bind(this);
-		this.storeNextSibling = this.storeNextSibling.bind(this);
-		this.storePrevSibling = this.storePrevSibling.bind(this);
-		this.getSiblingData = this.getSiblingData.bind(this);
+		this.getPrevSiblingMidpoint = this.getPrevSiblingMidpoint.bind(this);
+		this.getNextSiblingMidpoint = this.getNextSiblingMidpoint.bind(this);
 		this.pointerMoveHandler = this.pointerMoveHandler.bind(this);
-		this.touchStartHandler = this.touchStartHandler.bind(this);
-		// this.endMove = this.endMove.bind(this);
-		// this.mouseDownHandler = this.mouseDownHandler.bind(this);
-		// this.setNextSiblingMidpoint = this.setNextSiblingMidpoint.bind(this);
-		// this.setPrevSiblingMidpoint = this.setPrevSiblingMidpoint.bind(this);
-		// this.translateLiEl = this.translateLiEl.bind(this);
-		// this.updateSiblingLiIndexes = this.updateSiblingLiIndexes.bind(this);
-		// this.windowMouseMoveHandler = this.windowMouseMoveHandler.bind(this);
+		this.updateSiblingIndexes = this.updateSiblingIndexes.bind(this);
+		this.pointerUpHandler = this.pointerUpHandler.bind(this);
+		this.dropGrabbedEl = this.dropGrabbedEl.bind(this);
 	}
 
 
@@ -88,12 +72,9 @@ export default class ReorderList extends HTMLElement {
 
 
 		/* ADD EVENT LISTENERS */
-		this.listEl.addEventListener('pointerdown', this.pointerDownHandler, { passive: false });
+		this.listEl.addEventListener('pointerdown', this.pointerDownHandler);
 		this.listEl.addEventListener('touchstart', this.touchStartHandler);
-		// this.listEl.addEventListener('mousedown', this.mouseDownHandler);
-		// this.listEl.addEventListener('touchstart', this.mouseDownHandler);
-		// window.addEventListener('mouseup', this.endMove);
-		// window.addEventListener('touchend', this.endMove);
+		window.addEventListener('pointerup', this.pointerUpHandler);
 	}
 
 
@@ -101,11 +82,46 @@ export default class ReorderList extends HTMLElement {
 		/* REMOVE EVENT LISTENERS */
 		this.listEl?.removeEventListener('pointerdown', this.pointerDownHandler);
 		this.listEl?.removeEventListener('touchstart', this.touchStartHandler);
-		// this.listEl!.removeEventListener('mousedown', this.mouseDownHandler);
-		// this.listEl!.removeEventListener('touchstart', this.mouseDownHandler);
-		// window.removeEventListener('mouseup', this.endMove);
-		// window.removeEventListener('touchend', this.endMove);
+		window.removeEventListener('pointerup', this.pointerUpHandler);
 	}
+
+
+	/*
+		Drop grabbed item at given index
+	*/
+	private dropGrabbedEl(newIndex: number): void {
+		const insertBeforeElIndex = this.moveDiff < 0 ?
+			newIndex :
+			newIndex + 1;
+		this.listEl!.insertBefore(this.grabbedItemEl!, this.liEls[insertBeforeElIndex]);
+		this.liEls.splice(this.grabbedItemIndex!, 1);
+		this.liEls.splice(newIndex, 0, this.grabbedItemEl!);
+	}
+
+
+	/*
+		Get the total height of the grabbed item
+	*/
+	private getItemHeight(itemEl: HTMLLIElement): number {
+		// We can replace this with just selectedLiEl.offsetHeight if we force li elements to have no margin, use inner element and padding instead
+		const selectedLiElStyles = window.getComputedStyle(itemEl);
+		const topMargin = parseInt(selectedLiElStyles.marginTop);
+		const bottomMargin = parseInt(selectedLiElStyles.marginBottom);
+		const height = itemEl!.offsetHeight + topMargin + bottomMargin;
+		return height;
+	}
+
+
+	/*
+		Get the top and bottom Y-coordinates of the listEl
+	*/
+	private getListBounds(listEl: HTMLUListElement | HTMLOListElement): [number, number] {
+		const ulRect = listEl.getBoundingClientRect();
+		const top = ulRect.top + window.scrollY;
+		const bottom = ulRect.bottom + window.scrollY;
+		return [top, bottom];
+	}
+
 
 	/*
 		Get all the list items
@@ -114,6 +130,39 @@ export default class ReorderList extends HTMLElement {
 		return [...this.querySelectorAll(`[${ATTRS.ITEM}]`)] as HTMLLIElement[];
 	}
 
+
+	/*
+		Get the next sibling midpoint of a sibling at a given index and position (previous or next)
+	*/
+	private getNextSiblingMidpoint(siblingIndex: number): number {
+		return this.getSiblingMidpoint(this.liEls[siblingIndex], Sibling.Next);
+	}
+
+
+	/*
+		Get the previous sibling midpoint of a sibling at a given index and position (previous or next)
+	*/
+	private getPrevSiblingMidpoint(siblingIndex: number): number {
+		return this.getSiblingMidpoint(this.liEls[siblingIndex], Sibling.Prev);
+	}
+
+
+	/*
+		Get the midpoint of a sibling at a given index and position (previous or next)
+	*/
+	private getSiblingMidpoint(siblingEl: HTMLLIElement, position: Sibling): number {
+		let siblingMidpoint = position == Sibling.Prev ?
+			Number.NEGATIVE_INFINITY :
+			Number.POSITIVE_INFINITY;
+
+		if (siblingEl) {
+			const siblingRect = siblingEl.getBoundingClientRect();
+			siblingMidpoint = siblingRect.top + window.scrollY + siblingRect.height / 2;
+		}
+		return siblingMidpoint;
+	}
+
+
 	/*
 		Grab element and optionally add GRABBED_ITEM attribute
 	*/
@@ -121,7 +170,6 @@ export default class ReorderList extends HTMLElement {
 		this.grabbedItemEl = element;
 		const index = this.liEls.indexOf(element);
 		this.grabbedItemIndex = index;
-		this.destinationIndex = index;
 
 		if (!setGrabbedAttribute) {
 			return;
@@ -131,15 +179,137 @@ export default class ReorderList extends HTMLElement {
 		this.grabbedItemEl.setAttribute(ATTRS.GRABBED_ITEM, '');
 	}
 
+
+	/*
+		Handle pointer down events on list
+	*/
+	private pointerDownHandler(event: Event): void {
+		const targetEl = event.target as Element;
+		const reorderBtnClicked = targetEl.closest(`[${ATTRS.BTN}]`);
+		if (!reorderBtnClicked) {
+			return;
+		}
+
+		this.cursorStartPos = (event as PointerEvent).pageY;
+
+		const itemToGrabEl = targetEl.closest(`[${ATTRS.ITEM}]`) as HTMLLIElement;
+		this.grabItem(itemToGrabEl);
+
+		[this.listElTop, this.listElBottom] = this.getListBounds(this.listEl!);
+		this.grabbedItemElHeight = this.getItemHeight(this.grabbedItemEl!);
+
+		this.prevSiblingIndex = this.grabbedItemIndex! - 1;
+		this.nextSiblingIndex = this.grabbedItemIndex! + 1;
+		this.prevSiblingMidpoint = this.getPrevSiblingMidpoint(this.prevSiblingIndex);
+		this.nextSiblingMidpoint = this.getNextSiblingMidpoint(this.nextSiblingIndex);
+
+		window.addEventListener('pointermove', this.pointerMoveHandler, { passive: false });
+	}
+
+
+	/*
+		Handle pointer move events on window
+	*/
+	private pointerMoveHandler(event: Event): void {
+		if (!this.grabbedItemEl || (!this.grabbedItemIndex && this.grabbedItemIndex != 0)) {
+			return;
+		}
+
+		const e = event as PointerEvent;
+		const cursorPos = e.pageY;
+		const movementY = e.movementY;
+
+		if (movementY == 0) {
+			return;
+		}
+
+		// Anchor element Y position to cursor and scroll page with grabbed element
+		this.grabbedItemEl.style.top = `${cursorPos - (this.cursorStartPos ?? 0)}px`;
+		if (
+			ReorderList.useScrollIntoView &&
+			cursorPos >= this.listElTop! &&
+			cursorPos <= this.listElBottom!
+		) {
+			this.grabbedItemEl.scrollIntoView({
+				behaviour: 'smooth',
+				block: 'nearest',
+			} as ScrollIntoViewOptions);
+		}
+
+		// If cursor crosses previous or next sibling midpoint
+		if (cursorPos < this.prevSiblingMidpoint! || cursorPos > this.nextSiblingMidpoint!) {
+			this.movingLiEls = true;
+			const moveDirection = movementY < 0 ? -1 : 1;
+			const translateVal = -(this.grabbedItemElHeight! * moveDirection);
+			const movingUp = moveDirection == -1;
+			const movingDown = !movingUp;
+
+			while (
+				(movingUp && this.prevSiblingIndex! >= 0) ||
+				(movingDown && this.nextSiblingIndex! < this.liEls.length)
+			){
+				if (
+					(movingUp && cursorPos >= this.prevSiblingMidpoint!) ||
+					(movingDown && cursorPos <= this.nextSiblingMidpoint!)
+				){
+					break;
+				}
+
+				const elToTranslateIndex = movingUp ? this.prevSiblingIndex! : this.nextSiblingIndex!;
+				const elToTranslate = this.liEls[elToTranslateIndex];
+				this.translateLiEl(elToTranslate, translateVal);
+				this.updateSiblingIndexes(moveDirection);
+
+				// Update stored sibling midpoints
+				if (movingUp) {
+					// Can't use getNextSiblingMidpoint() because new sibling will transition
+					this.nextSiblingMidpoint = this.prevSiblingMidpoint! + this.grabbedItemElHeight!;
+					this.prevSiblingMidpoint = this.getPrevSiblingMidpoint(this.prevSiblingIndex!);
+				} else {
+					// Can't use getPrevSiblingMidpoint() because new sibling will transition
+					this.prevSiblingMidpoint = this.nextSiblingMidpoint! - this.grabbedItemElHeight!;
+					this.nextSiblingMidpoint = this.getNextSiblingMidpoint(this.nextSiblingIndex!);
+				}
+				this.moveDiff += moveDirection;
+			}
+
+			this.movingLiEls = false;
+		}
+	}
+
+
+	/*
+		Handle pointer up events on list
+	*/
+	private pointerUpHandler(): void {
+		if (!this.grabbedItemEl || (!this.grabbedItemIndex && this.grabbedItemIndex != 0)) {
+			return;
+		}
+
+		if (this.moveDiff) {
+			const grabbedItemNewIndex = this.grabbedItemIndex + this.moveDiff;
+			this.dropGrabbedEl(grabbedItemNewIndex);
+		}
+
+		this.listEl!.removeAttribute(ATTRS.REORDERING);
+		this.grabbedItemEl?.removeAttribute(ATTRS.GRABBED_ITEM);
+		this.liEls.forEach(liEl => liEl.style.transform = '');
+		this.grabbedItemEl.style.top = '';
+
+		this.resetMove();
+		window.removeEventListener('pointermove', this.pointerMoveHandler);
+	}
+
+
 	/*
 		Reset grabbed item state and remove GRABBED_ITEM attribute
 	*/
-	private resetGrab(): void {
-		this.grabbedItemEl?.removeAttribute(ATTRS.GRABBED_ITEM);
+	private resetMove(): void {
 		this.grabbedItemEl = null;
 		this.grabbedItemIndex = null;
-		this.destinationIndex = null;
+		this.moveDiff = 0;
 	}
+
 
 	/*
 	  Prevent page scrolling while dragging item
@@ -151,113 +321,39 @@ export default class ReorderList extends HTMLElement {
 		}
 	}
 
-	/*
-		Handle pointer down events
-	*/
-	private pointerDownHandler(event: Event): void {
-		const targetEl = event.target as Element;
-		const itemToGrabEl = targetEl.closest(`[${ATTRS.ITEM}]`) as HTMLLIElement;
-		const reorderBtnClicked = itemToGrabEl.querySelector(`[${ATTRS.BTN}]`);
-		if (!reorderBtnClicked || !itemToGrabEl) {
-			return;
-		}
-
-		const e = event as PointerEvent;
-		this.cursorStartPos = e.pageY;
-		this.grabItem(itemToGrabEl);
-		if (!this.grabbedItemEl || (!this.grabbedItemIndex && this.grabbedItemIndex != 0)) {
-			return;
-		}
-
-		[this.listElTop, this.listElBottom] = ReorderList.getListBounds(this.listEl!);
-		this.grabbedItemElHeight = ReorderList.getItemHeight(this.grabbedItemEl);
-
-		this.storePrevSibling(this.grabbedItemIndex);
-		this.storeNextSibling(this.grabbedItemIndex);
-
-		window.addEventListener('pointermove', this.pointerMoveHandler);
-	}
 
 	/*
-		Get the top and bottom Y-coordinates of the listEl
+		Translate the li at a given index by a given number of pixels
 	*/
-	private static getListBounds(listEl: HTMLUListElement | HTMLOListElement): [number, number] {
-		const ulRect = listEl.getBoundingClientRect();
-		const top = ulRect.top + window.scrollY;
-		const bottom = ulRect.bottom + window.scrollY;
-		return [top, bottom];
+	private translateLiEl(liEl: HTMLLIElement, translateVal: number): void {
+		const currentTransform = liEl.style.transform;
+		liEl.style.transform = currentTransform ?
+			'' :
+			`translate3d(0px, ${translateVal}px, 0px)`;
 	}
+
 
 	/*
-		Get the total height of the grabbed item
+		Update the sibling indexes based on a given direction or movement
 	*/
-	private static getItemHeight(itemEl: HTMLLIElement): number {
-		// We can replace this with just selectedLiEl.offsetHeight if we force li elements to have no margin, use inner element and padding instead
-		const selectedLiElStyles = window.getComputedStyle(itemEl);
-		const topMargin = parseInt(selectedLiElStyles.marginTop);
-		const bottomMargin = parseInt(selectedLiElStyles.marginBottom);
-		const height = itemEl!.offsetHeight + topMargin + bottomMargin;
-		return height;
-	}
-
-	private storePrevSibling(itemIndex: number): void {
-		[this.prevSiblingIndex, this.prevSiblingMidpoint] = this.getSiblingData(itemIndex, Sibling.Prev);
-		console.log('this.prevSiblingIndex', this.prevSiblingIndex);
-		console.log('this.prevSiblingMidpoint', this.prevSiblingMidpoint);
-	}
-
-	private storeNextSibling(itemIndex: number): void {
-		[this.nextSiblingIndex, this.nextSiblingMidpoint] = this.getSiblingData(itemIndex, Sibling.Next);
-		console.log('this.nextSiblingIndex', this.nextSiblingIndex);
-		console.log('this.nextSiblingMidpoint', this.nextSiblingMidpoint);
-	}
-
-	private getSiblingData(itemIndex: number, position: Sibling): [number, number] {
-		const direction = position == Sibling.Prev ? -1 : 1;
-		const siblingIndex = itemIndex + direction;
-		const siblingEl = this.liEls[siblingIndex];
-		let siblingMidpoint = position == Sibling.Prev ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY;
-		if (siblingEl) {
-			const siblingRect = siblingEl.getBoundingClientRect();
-			siblingMidpoint = siblingRect.top + window.scrollY + siblingRect.height / 2;
-		}
-		return [siblingIndex, siblingMidpoint];
-	}
-
-
-	private pointerMoveHandler(event: Event): void {
-		if (!this.grabbedItemEl || (!this.grabbedItemIndex && this.grabbedItemIndex != 0)) {
+	private updateSiblingIndexes(moveDirection: -1 | 1): void {
+		if (this.nextSiblingIndex == undefined || this.prevSiblingIndex == undefined) {
 			return;
 		}
 
-		const e = event as PointerEvent;
-		const cursorPos = e.pageY;
-		const movementY = e.movementY;
-		console.log(cursorPos);
-		console.log(movementY);
+		this.prevSiblingIndex += moveDirection;
+		this.nextSiblingIndex += moveDirection;
 
-
-		// let movementY;
-		// let cursorPos;
-		// if (e.type == 'mousemove') {
-		// } else { //TouchEvent
-		// 	const touch = (e as TouchEvent).touches[0];
-		// 	cursorPos = touch.pageY;
-		// 	movementY = touch.pageY - (this.previousTouch == undefined ? 0 : this.previousTouch.pageY);
-		// 	this.previousTouch = touch;
-		// }
-
-		if (movementY == 0) {
-			return;
+		// Choose index of previous li if index is that of grabbedEl
+		if (this.prevSiblingIndex == this.grabbedItemIndex) {
+			this.prevSiblingIndex += moveDirection;
 		}
 
-		// Anchor element Y position to cursor
-		this.grabbedItemEl.style.top = `${cursorPos - (this.cursorStartPos ?? 0)}px`;
+		// Choose index of next li if index is that of grabbedEl
+		if (this.nextSiblingIndex == this.grabbedItemIndex) {
+			this.nextSiblingIndex += moveDirection;
+		}
 	}
-
-
-
-
 
 	// -----------------------------------------------------------------
 	// -----------------------------------------------------------------
@@ -266,127 +362,6 @@ export default class ReorderList extends HTMLElement {
 	// -----------------------------------------------------------------
 
 
-	private endMove(): void {
-		// if (!this.moveStarted || !this.ulEl || !this.selectedLiEl || this.selectedLiElIndex == undefined || this.selectedLiElIndexDiff == undefined) {
-		// 	return;
-		// }
-
-		// const newSelectedLiElIndex = this.selectedLiElIndex + this.selectedLiElIndexDiff;
-		// if (this.selectedLiElIndexDiff) {
-		// 	const insertBeforeElIndex = this.selectedLiElIndexDiff < 0 ?
-		// 		newSelectedLiElIndex :
-		// 		newSelectedLiElIndex + 1;
-		// 	this.ulEl!.insertBefore(this.selectedLiEl, this.liEls[insertBeforeElIndex]);
-		// 	this.liEls.splice(this.selectedLiElIndex, 1);
-		// 	this.liEls.splice(newSelectedLiElIndex, 0, this.selectedLiEl);
-		// }
-
-		// this.ulEl.removeAttribute(ATTRS.REORDERING);
-		// this.liEls.forEach(liEl => liEl.style.transform = '');
-		// this.selectedLiEl.removeAttribute(ATTRS.ITEM_GRABBED);
-		// this.selectedLiEl.style.top = '';
-
-		// this.moveStarted = false;
-		// this.previousTouch = undefined;
-
-		// window.removeEventListener('mousemove', this.windowMouseMoveHandler);
-		// window.removeEventListener('touchmove', this.windowMouseMoveHandler);
-	}
-
-
-	private mouseDownHandler(e: Event): void {
-		// if (!this.ulEl) {
-		// 	return;
-		// }
-
-		// const targetEl = e.target as Element;
-		// if (!targetEl || !targetEl.closest(`[${ATTRS.BTN}]`)) {
-		// 	return;
-		// }
-
-		// this.selectedLiEl = targetEl.closest(`[${ATTRS.ITEM}]`) as HTMLLIElement;
-		// if (!this.selectedLiEl) {
-		// 	return;
-		// }
-
-		// if (e.type == 'touchstart') {
-		// 	e.preventDefault();
-		// }
-
-		// this.moveStarted = true;
-		// this.cursorStartPos = e.type == 'mousedown' ?
-		// 	(e as MouseEvent).pageY:
-		// 	(e as TouchEvent).touches[0].pageY;
-
-		// const ulRect = this.ulEl.getBoundingClientRect();
-		// this.ulElTop = ulRect.top + window.scrollY;
-		// this.ulElBottom = ulRect.bottom + window.scrollY;
-
-		// this.ulEl.setAttribute(ATTRS.REORDERING, '');
-		// this.selectedLiEl.setAttribute(ATTRS.ITEM_GRABBED, '');
-
-		// this.selectedLiElIndexDiff = 0;
-		// this.selectedLiElIndex = this.liEls.indexOf(this.selectedLiEl);
-
-		// this.prevSiblingIndex = this.selectedLiElIndex - 1;
-		// this.setPrevSiblingMidpoint(this.prevSiblingIndex);
-		// this.nextSiblingIndex = this.selectedLiElIndex + 1;
-		// this.setNextSiblingMidpoint(this.nextSiblingIndex);
-
-		// // We can replace this with just selectedLiEl.offsetHeight if we force li elements to have no margin, use inner element and padding instead;
-		// const selectedLiElStyles = window.getComputedStyle(this.selectedLiEl);
-		// this.moveDistance = this.selectedLiEl.offsetHeight + parseInt(selectedLiElStyles.marginTop) + parseInt(selectedLiElStyles.marginBottom);
-
-		// window.addEventListener('mousemove', this.windowMouseMoveHandler);
-		// window.addEventListener('touchmove', this.windowMouseMoveHandler);
-	}
-
-
-	private setNextSiblingMidpoint(liElIndex: number): void {
-		// this.nextSiblingMidpoint = Number.POSITIVE_INFINITY;
-		// const nextSibling = this.liEls[liElIndex];
-		// if (nextSibling) {
-		// 	const nextSiblingRect = nextSibling.getBoundingClientRect();
-		// 	this.nextSiblingMidpoint = nextSiblingRect.top + window.scrollY + nextSiblingRect.height / 2;
-		// }
-	}
-
-
-	private setPrevSiblingMidpoint(liElIndex: number): void {
-		// this.prevSiblingMidpoint = Number.NEGATIVE_INFINITY;
-		// const prevSibling = this.liEls[liElIndex];
-		// if (prevSibling) {
-		// 	const prevSiblingRect = prevSibling.getBoundingClientRect();
-		// 	this.prevSiblingMidpoint = prevSiblingRect.top + window.scrollY + prevSiblingRect.height / 2;
-		// }
-	}
-
-
-	private translateLiEl(index: number, translateVal: number): void {
-		// const targetLiEl = this.liEls[index];
-		// const currentTransform = targetLiEl.style.transform;
-		// targetLiEl.style.transform = currentTransform ?
-		// 	'' :
-		// 	`translate3d(0px, ${translateVal}px, 0px)`;
-	}
-
-
-	private updateSiblingLiIndexes(direction: -1 | 1): void {
-		// if (this.nextSiblingIndex == undefined || this.prevSiblingIndex == undefined) {
-		// 	return;
-		// }
-
-		// this.nextSiblingIndex += direction;
-		// this.prevSiblingIndex += direction;
-
-		// // Choose index of previous li if index is that of grabbedEl
-		// if (this.prevSiblingIndex == this.selectedLiElIndex) {
-		// 	this.prevSiblingIndex += direction;
-		// }
-		// if (this.nextSiblingIndex == this.selectedLiElIndex) {
-		// 	this.nextSiblingIndex += direction;
-		// }
-	}
 
 
 	private windowMouseMoveHandler(e: Event): void {
@@ -440,6 +415,10 @@ export default class ReorderList extends HTMLElement {
 			} as ScrollIntoViewOptions);
 		}
 
+
+
+
+
 		// If cursor crosses previous or next sibling li's midpoint
 		if (cursorPos < this.prevSiblingMidpoint || cursorPos > this.nextSiblingMidpoint) {
 			this.movingLiEls = true;
@@ -460,7 +439,7 @@ export default class ReorderList extends HTMLElement {
 
 				const elToTranslateIndex = movingUp ? this.prevSiblingIndex : this.nextSiblingIndex;
 				this.translateLiEl(elToTranslateIndex, translateVal);
-				this.updateSiblingLiIndexes(moveDirection);
+				this.updateSiblingIndexes(moveDirection);
 
 				// Update stored sibling midpoints
 				if (movingUp) {
