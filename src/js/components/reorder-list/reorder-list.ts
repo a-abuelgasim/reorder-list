@@ -9,6 +9,7 @@ export const REORDER_LIST = `ace-reorder-list`;
 export const ATTRS = {
 	BTN: `${REORDER_LIST}-item-btn`,
 	GRABBED_ITEM: `${REORDER_LIST}-grabbed-item`,
+	HIGHLIGHTED_ITEM: `${REORDER_LIST}-highlighted-item`,
 	ITEM: `${REORDER_LIST}-item`,
 	LIST: `${REORDER_LIST}-list`,
 	REORDERING: `${REORDER_LIST}-reordering`,
@@ -19,6 +20,7 @@ export const ATTRS = {
 /* CLASS */
 export default class ReorderList extends HTMLElement {
 	private cursorStartPos: number | undefined;
+	private dropIndex: number | null = null;
 	private grabbedItemEl: HTMLLIElement | null = null;
 	private grabbedItemElHeight: number | undefined;
 	private grabbedItemIndex: number | null = null;
@@ -47,6 +49,7 @@ export default class ReorderList extends HTMLElement {
 		this.updateSiblingIndexes = this.updateSiblingIndexes.bind(this);
 		this.pointerUpHandler = this.pointerUpHandler.bind(this);
 		this.dropGrabbedEl = this.dropGrabbedEl.bind(this);
+		this.keydownHandler = this.keydownHandler.bind(this);
 	}
 
 
@@ -286,6 +289,7 @@ export default class ReorderList extends HTMLElement {
 		this.grabbedItemEl = null;
 		this.grabbedItemIndex = null;
 		this.moveDiff = 0;
+		this.dropIndex = null;
 	}
 
 
