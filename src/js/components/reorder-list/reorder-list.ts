@@ -44,6 +44,7 @@ export default class ReorderList extends HTMLElement {
 		this.getNextSiblingMidpoint = this.getNextSiblingMidpoint.bind(this);
 		this.getPrevSiblingMidpoint = this.getPrevSiblingMidpoint.bind(this);
 		this.grabItem = this.grabItem.bind(this);
+		this.keyDownHandler = this.keyDownHandler.bind(this);
 		this.pointerDownHandler = this.pointerDownHandler.bind(this);
 		this.pointerMoveHandler = this.pointerMoveHandler.bind(this);
 		this.pointerUpHandler = this.pointerUpHandler.bind(this);
@@ -59,6 +60,7 @@ export default class ReorderList extends HTMLElement {
 
 
 		/* ADD EVENT LISTENERS */
+		this.listEl.addEventListener('keydown', this.keyDownHandler);
 		this.listEl.addEventListener('pointerdown', this.pointerDownHandler);
 		this.listEl.addEventListener('touchstart', this.touchStartHandler);
 		window.addEventListener('pointerup', this.pointerUpHandler);
@@ -67,6 +69,7 @@ export default class ReorderList extends HTMLElement {
 
 	public disconnectedCallback(): void {
 		/* REMOVE EVENT LISTENERS */
+		this.listEl?.removeEventListener('keydown', this.keyDownHandler);
 		this.listEl?.removeEventListener('pointerdown', this.pointerDownHandler);
 		this.listEl?.removeEventListener('touchstart', this.touchStartHandler);
 		window.removeEventListener('pointerup', this.pointerUpHandler);
@@ -153,6 +156,26 @@ export default class ReorderList extends HTMLElement {
 
 		this.listEl!.setAttribute(ATTRS.REORDERING, '');
 		this.grabbedItemEl.setAttribute(ATTRS.GRABBED_ITEM, '');
+	}
+
+
+	/*
+		Handle keydown events on listEl
+	*/
+	private keyDownHandler(e: Event): void {
+		const target = e.target as HTMLElement;
+		const selectedItemEl = target.closest(`[${ATTRS.ITEM}]`) as HTMLLIElement;
+		if (!selectedItemEl) {
+			return;
+		}
+
+		const btnSelected = target.closest(`[${ATTRS.BTN}]`);
+		const itemIndex = this.liEls.indexOf(selectedItemEl);
+
+		const keyPressed = (e as KeyboardEvent).key;
+		console.log(keyPressed);
+		console.log(itemIndex);
+		console.log(btnSelected);
 	}
 
 
