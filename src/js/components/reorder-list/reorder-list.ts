@@ -28,24 +28,25 @@ enum Sibling {
 	Next,
 }
 
+const useScrollIntoView = (): boolean => 'scrollBehavior' in document.documentElement.style;
+
 
 /* CLASS */
 export default class ReorderList extends HTMLElement {
-	private static useScrollIntoView = 'scrollBehavior' in document.documentElement.style;
+	private cursorStartPos: number | undefined;
+	private grabbedItemEl: HTMLLIElement | null = null;
+	private grabbedItemElHeight: number | undefined;
+	private grabbedItemIndex: number | null = null;
 	private liEls: HTMLLIElement[] = [];
 	private listEl: HTMLUListElement | HTMLOListElement | undefined;
-	private grabbedItemEl: HTMLLIElement | null = null;
-	private grabbedItemIndex: number | null = null;
-	private moveDiff = 0;
-	private cursorStartPos: number | undefined;
-	private listElTop: number | undefined;
 	private listElBottom: number | undefined;
-	private grabbedItemElHeight: number | undefined;
-	private nextSiblingIndex: number | undefined;
-	private prevSiblingIndex: number | undefined;
-	private nextSiblingMidpoint: number | undefined;
-	private prevSiblingMidpoint: number | undefined;
+	private listElTop: number | undefined;
+	private moveDiff = 0;
 	private movingLiEls = false;
+	private nextSiblingIndex: number | undefined;
+	private nextSiblingMidpoint: number | undefined;
+	private prevSiblingIndex: number | undefined;
+	private prevSiblingMidpoint: number | undefined;
 
 	constructor() {
 		super();
@@ -211,22 +212,26 @@ export default class ReorderList extends HTMLElement {
 		Handle pointer move events on window
 	*/
 	private pointerMoveHandler(event: Event): void {
+		if (this.movingLiEls) {
+			return;
+		}
+
 		if (!this.grabbedItemEl || (!this.grabbedItemIndex && this.grabbedItemIndex != 0)) {
 			return;
 		}
 
 		const e = event as PointerEvent;
-		const cursorPos = e.pageY;
 		const movementY = e.movementY;
-
 		if (movementY == 0) {
 			return;
 		}
 
+		const cursorPos = e.pageY;
+
 		// Anchor element Y position to cursor and scroll page with grabbed element
 		this.grabbedItemEl.style.top = `${cursorPos - (this.cursorStartPos ?? 0)}px`;
 		if (
-			ReorderList.useScrollIntoView &&
+			useScrollIntoView() &&
 			cursorPos >= this.listElTop! &&
 			cursorPos <= this.listElBottom!
 		) {
@@ -352,109 +357,6 @@ export default class ReorderList extends HTMLElement {
 		// Choose index of next li if index is that of grabbedEl
 		if (this.nextSiblingIndex == this.grabbedItemIndex) {
 			this.nextSiblingIndex += moveDirection;
-		}
-	}
-
-	// -----------------------------------------------------------------
-	// -----------------------------------------------------------------
-	// -----------------------------------------------------------------
-	// -----------------------------------------------------------------
-	// -----------------------------------------------------------------
-
-
-
-
-	private windowMouseMoveHandler(e: Event): void {
-		// if (
-		// 	this.cursorStartPos == undefined ||
-		// 	this.moveDistance == undefined ||
-		// 	this.nextSiblingIndex == undefined ||
-		// 	this.nextSiblingMidpoint == undefined ||
-		// 	this.prevSiblingIndex == undefined ||
-		// 	this.prevSiblingMidpoint == undefined ||
-		// 	this.selectedLiElIndex == undefined ||
-		// 	this.selectedLiElIndexDiff == undefined ||
-		// 	this.ulElBottom == undefined ||
-		// 	this.ulElTop == undefined
-		// ) {
-		// 	return;
-		// }
-
-		if (this.movingLiEls || !this.selectedLiEl) {
-			return;
-		}
-
-		let movementY;
-		let cursorPos;
-
-		if (e.type == 'mousemove') {
-			cursorPos = (e as MouseEvent).pageY;
-			movementY = (e as MouseEvent).movementY;
-		} else { //TouchEvent
-			const touch = (e as TouchEvent).touches[0];
-			cursorPos = touch.pageY;
-			movementY = touch.pageY - (this.previousTouch == undefined ? 0 : this.previousTouch.pageY);
-			this.previousTouch = touch;
-		}
-
-		if (movementY == 0) {
-			return;
-		}
-
-		// Anchor element Y position to cursor
-		this.selectedLiEl.style.top = `${cursorPos - this.cursorStartPos}px`;
-		// Scroll page with grabbed element
-		if (
-			ReorderList.useScrollIntoView &&
-			cursorPos >= this.ulElTop &&
-			cursorPos <= this.ulElBottom
-		) {
-			this.selectedLiEl.scrollIntoView({
-				behaviour: 'smooth',
-				block: 'nearest',
-			} as ScrollIntoViewOptions);
-		}
-
-
-
-
-
-		// If cursor crosses previous or next sibling li's midpoint
-		if (cursorPos < this.prevSiblingMidpoint || cursorPos > this.nextSiblingMidpoint) {
-			this.movingLiEls = true;
-			const moveDirection = movementY < 0 ? -1 : 1;
-			const movingUp = moveDirection == -1;
-			const translateVal = -(this.moveDistance * moveDirection);
-
-			while (
-				(movingUp && this.prevSiblingIndex >= 0) ||
-				(!movingUp && this.nextSiblingIndex < this.liEls.length)
-			){
-				if (
-					(movingUp && cursorPos >= this.prevSiblingMidpoint) ||
-					(!movingUp && cursorPos <= this.nextSiblingMidpoint)
-				){
-					break;
-				}
-
-				const elToTranslateIndex = movingUp ? this.prevSiblingIndex : this.nextSiblingIndex;
-				this.translateLiEl(elToTranslateIndex, translateVal);
-				this.updateSiblingIndexes(moveDirection);
-
-				// Update stored sibling midpoints
-				if (movingUp) {
-					// Can't use setNextSiblingMidpoint() because new sibling will transition
-					this.nextSiblingMidpoint = this.prevSiblingMidpoint + this.moveDistance;
-					this.setPrevSiblingMidpoint(this.prevSiblingIndex);
-				} else {
-					// Can't use setPrevSiblingMidpoint() because new sibling will transition
-					this.prevSiblingMidpoint = this.nextSiblingMidpoint - this.moveDistance;
-					this.setNextSiblingMidpoint(this.nextSiblingIndex);
-				}
-				this.selectedLiElIndexDiff += moveDirection;
-			}
-
-			this.movingLiEls = false;
 		}
 	}
 }
