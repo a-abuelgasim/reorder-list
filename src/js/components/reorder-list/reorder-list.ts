@@ -86,6 +86,7 @@ export default class ReorderList extends HTMLElement {
 		this.listEl!.insertBefore(this.grabbedItemEl!, this.liEls[insertBeforeElIndex]);
 		this.liEls.splice(this.grabbedItemIndex!, 1);
 		this.liEls.splice(newIndex, 0, this.grabbedItemEl!);
+		this.resetMove();
 	}
 
 
@@ -269,14 +270,12 @@ export default class ReorderList extends HTMLElement {
 			return;
 		}
 
-		this.dropGrabbedEl();
-
+		// Remove translations
 		this.listEl!.removeAttribute(ATTRS.REORDERING);
-		this.grabbedItemEl?.removeAttribute(ATTRS.GRABBED_ITEM);
 		this.liEls.forEach(liEl => liEl.style.transform = '');
 		this.grabbedItemEl.style.top = '';
 
-		this.resetMove();
+		this.dropGrabbedEl();
 		window.removeEventListener('pointermove', this.pointerMoveHandler);
 	}
 
@@ -285,6 +284,7 @@ export default class ReorderList extends HTMLElement {
 		Reset grabbed item state
 	*/
 	private resetMove(): void {
+		this.grabbedItemEl?.removeAttribute(ATTRS.GRABBED_ITEM);
 		this.grabbedItemEl = null;
 		this.grabbedItemIndex = null;
 		this.grabbedItemIndexChange = 0;
