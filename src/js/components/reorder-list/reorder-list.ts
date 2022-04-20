@@ -164,18 +164,23 @@ export default class ReorderList extends HTMLElement {
 	*/
 	private keyDownHandler(e: Event): void {
 		const target = e.target as HTMLElement;
-		const selectedItemEl = target.closest(`[${ATTRS.ITEM}]`) as HTMLLIElement;
-		if (!selectedItemEl) {
+		const itemElSelected = target.closest(`[${ATTRS.ITEM}]`) as HTMLLIElement;
+		if (!itemElSelected) {
 			return;
 		}
-
 		const btnSelected = target.closest(`[${ATTRS.BTN}]`);
-		const itemIndex = this.liEls.indexOf(selectedItemEl);
-
 		const keyPressed = (e as KeyboardEvent).key;
-		console.log(keyPressed);
-		console.log(itemIndex);
-		console.log(btnSelected);
+		switch(keyPressed) {
+			case 'Enter':
+				if (!this.grabbedItemEl && btnSelected) {
+					e.preventDefault();
+					this.grabItem(itemElSelected);
+					this.dropIndex = this.grabbedItemIndex;
+				// } else if (this.grabbedItemEl) {
+					// this.moveSelectedToTarget();
+				}
+				break;
+		}
 	}
 
 
