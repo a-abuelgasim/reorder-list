@@ -22,11 +22,11 @@ export default class ReorderList extends HTMLElement {
 	private grabbedItemEl: HTMLLIElement | null = null;
 	private grabbedItemElHeight: number | undefined;
 	private grabbedItemIndex: number | null = null;
+	private grabbedItemIndexChange = 0;
 	private liEls: HTMLLIElement[] = [];
 	private listEl: HTMLUListElement | HTMLOListElement | undefined;
 	private listElBottom: number | undefined;
 	private listElTop: number | undefined;
-	private moveDiff = 0;
 	private movingLiEls = false;
 	private nextSiblingIndex: number | undefined;
 	private nextSiblingMidpoint: number | undefined;
@@ -72,15 +72,15 @@ export default class ReorderList extends HTMLElement {
 
 
 	/*
-		Drop grabbed item at given index
+		Drop grabbed item at new index based on this.grabbedItemIndexChange
 	*/
 	private dropGrabbedEl(): void {
-		if (!this.moveDiff) {
+		if (!this.grabbedItemIndexChange) {
 			return;
 		}
 
-		const newIndex = this.grabbedItemIndex! + this.moveDiff;
-		const insertBeforeElIndex = this.moveDiff < 0 ?
+		const newIndex = this.grabbedItemIndex! + this.grabbedItemIndexChange;
+		const insertBeforeElIndex = this.grabbedItemIndexChange < 0 ?
 			newIndex :
 			newIndex + 1;
 		this.listEl!.insertBefore(this.grabbedItemEl!, this.liEls[insertBeforeElIndex]);
@@ -253,7 +253,7 @@ export default class ReorderList extends HTMLElement {
 					this.prevSiblingMidpoint = this.nextSiblingMidpoint! - this.grabbedItemElHeight!;
 					this.nextSiblingMidpoint = this.getNextSiblingMidpoint(this.nextSiblingIndex!);
 				}
-				this.moveDiff += moveDirection;
+				this.grabbedItemIndexChange += moveDirection;
 			}
 
 			this.movingLiEls = false;
@@ -287,7 +287,7 @@ export default class ReorderList extends HTMLElement {
 	private resetMove(): void {
 		this.grabbedItemEl = null;
 		this.grabbedItemIndex = null;
-		this.moveDiff = 0;
+		this.grabbedItemIndexChange = 0;
 	}
 
 
