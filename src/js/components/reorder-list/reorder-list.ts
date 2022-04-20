@@ -20,7 +20,6 @@ export const ATTRS = {
 /* CLASS */
 export default class ReorderList extends HTMLElement {
 	private cursorStartPos: number | undefined;
-	private dropIndex: number | null = null;
 	private grabbedItemEl: HTMLLIElement | null = null;
 	private grabbedItemElHeight: number | undefined;
 	private grabbedItemIndex: number | null = null;
@@ -180,9 +179,11 @@ export default class ReorderList extends HTMLElement {
 				if (!this.grabbedItemEl && btnSelected) {
 					e.preventDefault();
 					this.grabItem(itemElSelected);
-					this.dropIndex = this.grabbedItemIndex;
-				// } else if (this.grabbedItemEl) {
-					// this.moveSelectedToTarget();
+					this.moveDiff = 2;
+				} else if (this.grabbedItemEl) {
+					this.dropGrabbedEl();
+					this.resetMove();
+					// this.grabbedItemEl.focus();
 				}
 				break;
 		}
