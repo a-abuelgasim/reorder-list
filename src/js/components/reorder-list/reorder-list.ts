@@ -79,7 +79,12 @@ export default class ReorderList extends HTMLElement {
 	/*
 		Drop grabbed item at given index
 	*/
-	private dropGrabbedEl(newIndex: number): void {
+	private dropGrabbedEl(): void {
+		if (!this.moveDiff) {
+			return;
+		}
+
+		const newIndex = this.grabbedItemIndex! + this.moveDiff;
 		const insertBeforeElIndex = this.moveDiff < 0 ?
 			newIndex :
 			newIndex + 1;
@@ -294,10 +299,7 @@ export default class ReorderList extends HTMLElement {
 			return;
 		}
 
-		if (this.moveDiff) {
-			const grabbedItemNewIndex = this.grabbedItemIndex + this.moveDiff;
-			this.dropGrabbedEl(grabbedItemNewIndex);
-		}
+		this.dropGrabbedEl();
 
 		this.listEl!.removeAttribute(ATTRS.REORDERING);
 		this.grabbedItemEl?.removeAttribute(ATTRS.GRABBED_ITEM);
