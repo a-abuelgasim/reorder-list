@@ -8,6 +8,7 @@ export const REORDER_LIST = `ace-reorder-list`;
 /* CONSTANTS */
 export const ATTRS = {
 	BTN: `${REORDER_LIST}-item-btn`,
+	FOCUS_DUMMY: `${REORDER_LIST}-focus-dummy`,
 	GRABBED_ITEM: `${REORDER_LIST}-grabbed-item`,
 	HIGHLIGHTED_ITEM: `${REORDER_LIST}-highlighted-item`,
 	ITEM: `${REORDER_LIST}-item`,
@@ -21,6 +22,7 @@ export const ATTRS = {
 /* CLASS */
 export default class ReorderList extends HTMLElement {
 	private cursorStartPos: number | undefined;
+	private focusDummyEl: HTMLDivElement | undefined;
 	private grabbedItemEl: HTMLLIElement | null = null;
 	private grabbedItemElHeight: number | undefined;
 	private grabbedItemIndex: number | null = null;
@@ -63,6 +65,7 @@ export default class ReorderList extends HTMLElement {
 		this.listEl = this.querySelector(`[${ATTRS.LIST}]`) as HTMLUListElement | HTMLOListElement;
 		this.liEls = [...this.querySelectorAll(`[${ATTRS.ITEM}]`)] as HTMLLIElement[];
 		this.liveRegionEl = this.querySelector(`[${ATTRS.LIVE_REGION}]`) as HTMLDivElement;
+		this.focusDummyEl = this.querySelector(`[${ATTRS.FOCUS_DUMMY}]`) as HTMLDivElement;
 
 
 		/* ADD EVENT LISTENERS */
@@ -97,10 +100,14 @@ export default class ReorderList extends HTMLElement {
 			this.grabbedItemEl = this.listEl!.insertBefore(this.grabbedItemEl!, this.liEls[insertBeforeElIndex]);
 			this.liEls = [...this.querySelectorAll(`[${ATTRS.ITEM}]`)] as HTMLLIElement[];
 
-			(document.querySelector('[ace-reorder-list-focus-dummy]') as HTMLElement)?.focus();
-			this.liveRegionEl!.textContent =
-				`${this.selectedElName} dropped at position ${newIndex + 1}.`;
-			this.grabbedItemEl?.focus();
+			// Hack to update SR list numbering
+			const grabbedItemEl = this.grabbedItemEl!;
+			this.focusDummyEl!.focus();
+			setTimeout(() => {
+				grabbedItemEl.focus();
+				this.liveRegionEl!.textContent =
+					`${this.selectedElName} dropped at position ${newIndex + 1}.`;
+			}, 100);
 		}
 		this.resetMove();
 	}
