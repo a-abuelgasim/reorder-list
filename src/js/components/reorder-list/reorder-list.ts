@@ -90,9 +90,8 @@ export default class ReorderList extends HTMLElement {
 			const insertBeforeElIndex = this.grabbedItemIndexChange < 0 ?
 				newIndex :
 				newIndex + 1;
-			this.listEl!.insertBefore(this.grabbedItemEl!, this.liEls[insertBeforeElIndex]);
-			this.liEls.splice(this.grabbedItemIndex!, 1);
-			this.liEls.splice(newIndex, 0, this.grabbedItemEl!);
+			this.grabbedItemEl = this.listEl!.insertBefore(this.grabbedItemEl!, this.liEls[insertBeforeElIndex]);
+			this.liEls = [...this.querySelectorAll(`[${ATTRS.ITEM}]`)] as HTMLLIElement[];
 		}
 		this.resetMove();
 	}
