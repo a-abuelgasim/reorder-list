@@ -85,17 +85,15 @@ export default class ReorderList extends HTMLElement {
 		Drop grabbed item at new index based on this.grabbedItemIndexChange
 	*/
 	private dropGrabbedEl(): void {
-		if (!this.grabbedItemIndexChange) {
-			return;
+		if (this.grabbedItemIndexChange) {
+			const newIndex = this.grabbedItemIndex! + this.grabbedItemIndexChange;
+			const insertBeforeElIndex = this.grabbedItemIndexChange < 0 ?
+				newIndex :
+				newIndex + 1;
+			this.listEl!.insertBefore(this.grabbedItemEl!, this.liEls[insertBeforeElIndex]);
+			this.liEls.splice(this.grabbedItemIndex!, 1);
+			this.liEls.splice(newIndex, 0, this.grabbedItemEl!);
 		}
-
-		const newIndex = this.grabbedItemIndex! + this.grabbedItemIndexChange;
-		const insertBeforeElIndex = this.grabbedItemIndexChange < 0 ?
-			newIndex :
-			newIndex + 1;
-		this.listEl!.insertBefore(this.grabbedItemEl!, this.liEls[insertBeforeElIndex]);
-		this.liEls.splice(this.grabbedItemIndex!, 1);
-		this.liEls.splice(newIndex, 0, this.grabbedItemEl!);
 		this.resetMove();
 	}
 
