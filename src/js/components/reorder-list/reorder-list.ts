@@ -96,6 +96,8 @@ export default class ReorderList extends HTMLElement {
 				newIndex + 1;
 			this.grabbedItemEl = this.listEl!.insertBefore(this.grabbedItemEl!, this.liEls[insertBeforeElIndex]);
 			this.liEls = [...this.querySelectorAll(`[${ATTRS.ITEM}]`)] as HTMLLIElement[];
+			this.liveRegionEl!.textContent =
+				`${this.selectedElName} dropped at position ${newIndex + 1}.`;
 		}
 		this.resetMove();
 	}
@@ -204,23 +206,12 @@ export default class ReorderList extends HTMLElement {
 					e.preventDefault();
 					this.grabItem(itemElSelected);
 					this.highlightedItemIndex = this.grabbedItemIndex;
-					console.log('this.grabbedItemIndex', this.grabbedItemIndex);
-					console.log('this.highlightedItemIndex', this.highlightedItemIndex);
 				} else if (this.grabbedItemEl) {
 					e.preventDefault();
 					this.liEls[this.highlightedItemIndex!]?.removeAttribute(ATTRS.HIGHLIGHTED_ITEM);
 					this.grabbedItemIndexChange = this.highlightedItemIndex! - this.grabbedItemIndex!;
 					this.dropGrabbedEl();
-					this.liveRegionEl!.textContent =
-						`${this.selectedElName} dropped at position ${this.highlightedItemIndex! + 1}.`;
-
-					const itemElSelectedBtn = itemElSelected.querySelector(`[${ATTRS.BTN}]`) as HTMLButtonElement;
-					itemElSelectedBtn.setAttribute('aria-hidden', 'true');
-					this.resetMove();
-					setTimeout(() => {
-						itemElSelectedBtn?.focus();
-						itemElSelectedBtn.removeAttribute('aria-hidden');
-					}, 0);
+					itemElSelected?.focus();
 				}
 				break;
 			case 'Escape':
@@ -236,9 +227,6 @@ export default class ReorderList extends HTMLElement {
 				if (!this.grabbedItemEl || (!this.highlightedItemIndex && this.highlightedItemIndex !== 0)) {
 					return;
 				}
-
-
-				console.log(this.highlightedItemIndex);
 
 				e.preventDefault();
 				const lastLiElIndex = this.liEls.length - 1;
