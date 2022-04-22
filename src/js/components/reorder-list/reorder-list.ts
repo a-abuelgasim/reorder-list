@@ -12,6 +12,7 @@ export const ATTRS = {
 	HIGHLIGHTED_ITEM: `${REORDER_LIST}-highlighted-item`,
 	ITEM: `${REORDER_LIST}-item`,
 	LIST: `${REORDER_LIST}-list`,
+	LIVE_REGION: `${REORDER_LIST}-live-region`,
 	REORDERING: `${REORDER_LIST}-reordering`,
 };
 
@@ -29,11 +30,13 @@ export default class ReorderList extends HTMLElement {
 	private listEl: HTMLUListElement | HTMLOListElement | undefined;
 	private listElBottom: number | undefined;
 	private listElTop: number | undefined;
+	private liveRegionEl: HTMLDivElement | undefined;
 	private movingLiEls = false;
 	private nextSiblingIndex: number | undefined;
 	private nextSiblingMidpoint: number | undefined;
 	private prevSiblingIndex: number | undefined;
 	private prevSiblingMidpoint: number | undefined;
+	private selectedElName = '';
 
 
 	constructor() {
@@ -59,6 +62,7 @@ export default class ReorderList extends HTMLElement {
 		/* GET DOM ELEMENTS */
 		this.listEl = this.querySelector(`[${ATTRS.LIST}]`) as HTMLUListElement | HTMLOListElement;
 		this.liEls = [...this.querySelectorAll(`[${ATTRS.ITEM}]`)] as HTMLLIElement[];
+		this.liveRegionEl = this.querySelector(`[${ATTRS.LIVE_REGION}]`) as HTMLDivElement;
 
 
 		/* ADD EVENT LISTENERS */
@@ -171,6 +175,8 @@ export default class ReorderList extends HTMLElement {
 		this.grabbedItemEl = element;
 		const index = this.liEls.indexOf(element);
 		this.grabbedItemIndex = index;
+		this.liveRegionEl!.textContent =
+			`${this.selectedElName} grabbed at position ${index + 1} of ${this.liEls.length}. Press Up or Down arrow keys to navigate to new position. Press Escape to cancel move`;
 
 		if (!setGrabbedStyles) {
 			return;
@@ -190,6 +196,7 @@ export default class ReorderList extends HTMLElement {
 		if (!itemElSelected) {
 			return;
 		}
+		this.selectedElName = itemElSelected.querySelector('span')!.textContent!;
 		const btnSelected = target.closest(`[${ATTRS.BTN}]`);
 		const keyPressed = (e as KeyboardEvent).key;
 		switch(keyPressed) {
@@ -198,18 +205,28 @@ export default class ReorderList extends HTMLElement {
 					e.preventDefault();
 					this.grabItem(itemElSelected);
 					this.highlightedItemIndex = this.grabbedItemIndex;
+					console.log('this.grabbedItemIndex', this.grabbedItemIndex);
+					console.log('this.highlightedItemIndex', this.highlightedItemIndex);
 				} else if (this.grabbedItemEl) {
 					e.preventDefault();
 					this.liEls[this.highlightedItemIndex!]?.removeAttribute(ATTRS.HIGHLIGHTED_ITEM);
 					this.grabbedItemIndexChange = this.highlightedItemIndex! - this.grabbedItemIndex!;
 					this.dropGrabbedEl();
+					this.liveRegionEl!.textContent =
+						`${this.selectedElName} dropped at position ${this.highlightedItemIndex! + 1}.`;
+
 					const itemElSelectedBtn = itemElSelected.querySelector(`[${ATTRS.BTN}]`) as HTMLButtonElement;
-					itemElSelectedBtn?.focus();
+					itemElSelectedBtn.setAttribute('aria-hidden', 'true');
 					this.resetMove();
+					setTimeout(() => {
+						itemElSelectedBtn?.focus();
+						itemElSelectedBtn.removeAttribute('aria-hidden');
+					}, 0);
 				}
 				break;
 			case 'Escape':
 				if (this.grabbedItemEl) {
+					this.liveRegionEl!.textContent = 'Item move cancelled';
 					this.resetMove();
 				}
 				break;
@@ -220,6 +237,9 @@ export default class ReorderList extends HTMLElement {
 				if (!this.grabbedItemEl || (!this.highlightedItemIndex && this.highlightedItemIndex !== 0)) {
 					return;
 				}
+
+
+				console.log(this.highlightedItemIndex);
 
 				e.preventDefault();
 				const lastLiElIndex = this.liEls.length - 1;
@@ -256,6 +276,9 @@ export default class ReorderList extends HTMLElement {
 						block: 'nearest',
 					} as ScrollIntoViewOptions);
 				}
+
+				this.liveRegionEl!.textContent =
+					`You are now at position ${this.highlightedItemIndex + 1} of ${this.liEls.length}. Press Enter to drop grabbed item here. Press Escape to cancel move.`;
 				break;
 			}
 		}
