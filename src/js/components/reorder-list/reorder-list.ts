@@ -24,6 +24,7 @@ export default class ReorderList extends HTMLElement {
 	private grabbedItemElHeight: number | undefined;
 	private grabbedItemIndex: number | null = null;
 	private grabbedItemIndexChange = 0;
+	private highlightedItemIndex: number | null = null;
 	private liEls: HTMLLIElement[] = [];
 	private listEl: HTMLUListElement | HTMLOListElement | undefined;
 	private listElBottom: number | undefined;
@@ -39,6 +40,7 @@ export default class ReorderList extends HTMLElement {
 
 
 		/* CLASS METHOD BINDINGS */
+		this.focusOutHandler = this.focusOutHandler.bind(this);
 		this.dropGrabbedEl = this.dropGrabbedEl.bind(this);
 		this.getNextSiblingMidpoint = this.getNextSiblingMidpoint.bind(this);
 		this.getPrevSiblingMidpoint = this.getPrevSiblingMidpoint.bind(this);
@@ -59,6 +61,8 @@ export default class ReorderList extends HTMLElement {
 
 
 		/* ADD EVENT LISTENERS */
+		this.listEl.addEventListener('focusout', this.focusOutHandler);
+		this.listEl.addEventListener('focusout', this.focusOutHandler);
 		this.listEl.addEventListener('keydown', this.keyDownHandler);
 		this.listEl.addEventListener('pointerdown', this.pointerDownHandler);
 		this.listEl.addEventListener('touchstart', this.touchStartHandler);
@@ -68,6 +72,7 @@ export default class ReorderList extends HTMLElement {
 
 	public disconnectedCallback(): void {
 		/* REMOVE EVENT LISTENERS */
+		this.listEl?.addEventListener('focusout', this.focusOutHandler);
 		this.listEl?.removeEventListener('keydown', this.keyDownHandler);
 		this.listEl?.removeEventListener('pointerdown', this.pointerDownHandler);
 		this.listEl?.removeEventListener('touchstart', this.touchStartHandler);
@@ -90,6 +95,19 @@ export default class ReorderList extends HTMLElement {
 		this.listEl!.insertBefore(this.grabbedItemEl!, this.liEls[insertBeforeElIndex]);
 		this.liEls.splice(this.grabbedItemIndex!, 1);
 		this.liEls.splice(newIndex, 0, this.grabbedItemEl!);
+		this.resetMove();
+	}
+
+
+	/*
+		Handle focusout event on list
+	*/
+	private focusOutHandler(e: Event): void {
+		const targetBtn = (e.target as Element).closest(`[${ATTRS.BTN}]`);
+		if (!targetBtn) {
+			return;
+		}
+
 		this.resetMove();
 	}
 
@@ -180,12 +198,68 @@ export default class ReorderList extends HTMLElement {
 				if (!this.grabbedItemEl && btnSelected) {
 					e.preventDefault();
 					this.grabItem(itemElSelected);
-					this.grabbedItemIndexChange = -2;
+					this.highlightedItemIndex = this.grabbedItemIndex;
 				} else if (this.grabbedItemEl) {
+					e.preventDefault();
+					this.liEls[this.highlightedItemIndex!]?.removeAttribute(ATTRS.HIGHLIGHTED_ITEM);
+					this.grabbedItemIndexChange = this.highlightedItemIndex! - this.grabbedItemIndex!;
 					this.dropGrabbedEl();
+					const itemElSelectedBtn = itemElSelected.querySelector(`[${ATTRS.BTN}]`) as HTMLButtonElement;
+					itemElSelectedBtn?.focus();
 					this.resetMove();
 				}
 				break;
+			case 'Escape':
+				if (!this.grabbedItemEl) {
+					return;
+				}
+				this.resetMove();
+				break;
+			case 'ArrowUp':
+			case 'ArrowDown':
+			case 'Home':
+			case 'End': {
+				if (!this.grabbedItemEl || (!this.highlightedItemIndex && this.highlightedItemIndex !== 0)) {
+					return;
+				}
+
+				e.preventDefault();
+				const lastLiElIndex = this.liEls.length - 1;
+
+				if (keyPressed.includes('Arrow')) {
+					const moveDirection = keyPressed == 'ArrowUp' ? -1 : 1;
+					this.liEls[this.highlightedItemIndex].removeAttribute(ATTRS.HIGHLIGHTED_ITEM);
+					this.highlightedItemIndex += moveDirection;
+					if (this.highlightedItemIndex == this.grabbedItemIndex) {
+						this.highlightedItemIndex += moveDirection;
+					}
+
+					if (this.highlightedItemIndex < 0) {
+						this.highlightedItemIndex = lastLiElIndex;
+					} else if (this.highlightedItemIndex > lastLiElIndex) {
+						this.highlightedItemIndex = 0;
+					}
+
+					if (this.highlightedItemIndex == this.grabbedItemIndex) {
+						this.highlightedItemIndex += moveDirection;
+					}
+				} else {
+					this.highlightedItemIndex = keyPressed == 'Home' ? 0 : lastLiElIndex;
+				}
+
+				const highlightedItemEl = this.liEls[this.highlightedItemIndex];
+				if (!highlightedItemEl) {
+					return;
+				}
+				highlightedItemEl.setAttribute(ATTRS.HIGHLIGHTED_ITEM, '');
+				if (useScrollIntoView()) {
+					highlightedItemEl.scrollIntoView({
+						behaviour: 'smooth',
+						block: 'nearest',
+					} as ScrollIntoViewOptions);
+				}
+				break;
+			}
 		}
 	}
 
@@ -318,7 +392,9 @@ export default class ReorderList extends HTMLElement {
 		this.grabbedItemEl = null;
 		this.grabbedItemIndex = null;
 		this.grabbedItemIndexChange = 0;
-		this.listEl?.querySelector(`[${ATTRS.HIGHLIGHTED_ITEM}]`)?.removeAttribute(ATTRS.HIGHLIGHTED_ITEM);
+
+		this.liEls[this.highlightedItemIndex!]?.removeAttribute(ATTRS.HIGHLIGHTED_ITEM);
+		this.highlightedItemIndex = null;
 	}
 
 
