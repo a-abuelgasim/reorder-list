@@ -96,8 +96,11 @@ export default class ReorderList extends HTMLElement {
 				newIndex + 1;
 			this.grabbedItemEl = this.listEl!.insertBefore(this.grabbedItemEl!, this.liEls[insertBeforeElIndex]);
 			this.liEls = [...this.querySelectorAll(`[${ATTRS.ITEM}]`)] as HTMLLIElement[];
+
+			(document.querySelector('[ace-reorder-list-focus-dummy]') as HTMLElement)?.focus();
 			this.liveRegionEl!.textContent =
 				`${this.selectedElName} dropped at position ${newIndex + 1}.`;
+			this.grabbedItemEl?.focus();
 		}
 		this.resetMove();
 	}
@@ -211,7 +214,6 @@ export default class ReorderList extends HTMLElement {
 					this.liEls[this.highlightedItemIndex!]?.removeAttribute(ATTRS.HIGHLIGHTED_ITEM);
 					this.grabbedItemIndexChange = this.highlightedItemIndex! - this.grabbedItemIndex!;
 					this.dropGrabbedEl();
-					itemElSelected?.focus();
 				}
 				break;
 			case 'Escape':
