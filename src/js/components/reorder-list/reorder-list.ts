@@ -33,6 +33,7 @@ export default class ReorderList extends HTMLElement {
 	private prevSiblingIndex: number | undefined;
 	private prevSiblingMidpoint: number | undefined;
 
+
 	constructor() {
 		super();
 
