@@ -211,10 +211,9 @@ export default class ReorderList extends HTMLElement {
 				}
 				break;
 			case 'Escape':
-				if (!this.grabbedItemEl) {
-					return;
+				if (this.grabbedItemEl) {
+					this.resetMove();
 				}
-				this.resetMove();
 				break;
 			case 'ArrowUp':
 			case 'ArrowDown':
