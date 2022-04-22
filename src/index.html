@@ -11,126 +11,248 @@
 
 <body>
 	<ace-reorder-list>
-		<ul ace-reorder-list-list>
+		<div
+				aria-hidden="true"
+				class="sr-only"
+				id="reorder-list-list-instructions">
+			The order of the items in this list can be changed. To move an item grab it using it's move button, navigate to a new position using Home, End, or the Up or Down arrow keys, then press Enter to drop it at that position.
+		</div>
+
+		<div
+				aria-hidden="true"
+				class="sr-only"
+				id="reorder-list-btn-instructions">
+			Press Enter to grab item.
+		</div>
+
+		<div
+				ace-reorder-list-live-region
+				aria-live="assertive"
+				class="sr-only">
+		</div>
+
+		<ul
+				ace-reorder-list-list
+				aria-describedby="reorder-list-list-instructions">
 			<li ace-reorder-list-item>
 				<span>Item 1</span>
 				<span>Description</span>
 				<span>Size</span>
-				<button ace-reorder-list-item-btn>&#9776;</button>
+				<button
+						ace-reorder-list-item-btn
+						aria-describedby="reorder-list-btn-instructions"
+						aria-label="Move item 1">
+					&#9776;
+				</button>
 			</li>
 			<li ace-reorder-list-item>
 				<span>Item 2</span>
 				<span>Description</span>
 				<span>Size</span>
-				<button ace-reorder-list-item-btn>&#9776;</button>
+				<button
+						ace-reorder-list-item-btn
+						aria-describedby="reorder-list-btn-instructions"
+						aria-label="Move item 2">
+					&#9776;
+				</button>
 			</li>
 			<li ace-reorder-list-item>
 				<span>Item 3</span>
 				<span>Description</span>
 				<span>Size</span>
-				<button ace-reorder-list-item-btn>&#9776;</button>
+				<button
+						ace-reorder-list-item-btn
+						aria-describedby="reorder-list-btn-instructions"
+						aria-label="Move item 3">
+					&#9776;
+				</button>
 			</li>
 			<li ace-reorder-list-item>
 				<span>Item 4</span>
 				<span>Description</span>
 				<span>Size</span>
-				<button ace-reorder-list-item-btn>&#9776;</button>
+				<button
+						ace-reorder-list-item-btn
+						aria-describedby="reorder-list-btn-instructions"
+						aria-label="Move item 4">
+					&#9776;
+				</button>
 			</li>
 			<li ace-reorder-list-item>
 				<span>Item 5</span>
 				<span>Description</span>
 				<span>Size</span>
-				<button ace-reorder-list-item-btn>&#9776;</button>
+				<button
+						ace-reorder-list-item-btn
+						aria-describedby="reorder-list-btn-instructions"
+						aria-label="Move item 5">
+					&#9776;
+				</button>
 			</li>
 			<li ace-reorder-list-item>
 				<span>Item 6</span>
 				<span>Description</span>
 				<span>Size</span>
-				<button ace-reorder-list-item-btn>&#9776;</button>
+				<button
+						ace-reorder-list-item-btn
+						aria-describedby="reorder-list-btn-instructions"
+						aria-label="Move item 6">
+					&#9776;
+				</button>
 			</li>
 			<li ace-reorder-list-item>
 				<span>Item 7</span>
 				<span>Description</span>
 				<span>Size</span>
-				<button ace-reorder-list-item-btn>&#9776;</button>
+				<button
+						ace-reorder-list-item-btn
+						aria-describedby="reorder-list-btn-instructions"
+						aria-label="Move item 7">
+					&#9776;
+				</button>
 			</li>
 			<li ace-reorder-list-item>
 				<span>Item 8</span>
 				<span>Description</span>
 				<span>Size</span>
-				<button ace-reorder-list-item-btn>&#9776;</button>
+				<button
+						ace-reorder-list-item-btn
+						aria-describedby="reorder-list-btn-instructions"
+						aria-label="Move item 8">
+					&#9776;
+				</button>
 			</li>
 			<li ace-reorder-list-item>
 				<span>Item 9</span>
 				<span>Description</span>
 				<span>Size</span>
-				<button ace-reorder-list-item-btn>&#9776;</button>
+				<button
+						ace-reorder-list-item-btn
+						aria-describedby="reorder-list-btn-instructions"
+						aria-label="Move item 9">
+					&#9776;
+				</button>
 			</li>
 			<li ace-reorder-list-item>
 				<span>Item 10</span>
 				<span>Description</span>
 				<span>Size</span>
-				<button ace-reorder-list-item-btn>&#9776;</button>
+				<button
+						ace-reorder-list-item-btn
+						aria-describedby="reorder-list-btn-instructions"
+						aria-label="Move item 10">
+					&#9776;
+				</button>
 			</li>
 			<li ace-reorder-list-item>
 				<span>Item 11</span>
 				<span>Description</span>
 				<span>Size</span>
-				<button ace-reorder-list-item-btn>&#9776;</button>
+				<button
+						ace-reorder-list-item-btn
+						aria-describedby="reorder-list-btn-instructions"
+						aria-label="Move item 11">
+					&#9776;
+				</button>
 			</li>
 			<li ace-reorder-list-item>
 				<span>Item 12</span>
 				<span>Description</span>
 				<span>Size</span>
-				<button ace-reorder-list-item-btn>&#9776;</button>
+				<button
+						ace-reorder-list-item-btn
+						aria-describedby="reorder-list-btn-instructions"
+						aria-label="Move item 12">
+					&#9776;
+				</button>
 			</li>
 			<li ace-reorder-list-item>
 				<span>Item 13</span>
 				<span>Description</span>
 				<span>Size</span>
-				<button ace-reorder-list-item-btn>&#9776;</button>
+				<button
+						ace-reorder-list-item-btn
+						aria-describedby="reorder-list-btn-instructions"
+						aria-label="Move item 13">
+					&#9776;
+				</button>
 			</li>
 			<li ace-reorder-list-item>
 				<span>Item 14</span>
 				<span>Description</span>
 				<span>Size</span>
-				<button ace-reorder-list-item-btn>&#9776;</button>
+				<button
+						ace-reorder-list-item-btn
+						aria-describedby="reorder-list-btn-instructions"
+						aria-label="Move item 14">
+					&#9776;
+				</button>
 			</li>
 			<li ace-reorder-list-item>
 				<span>Item 15</span>
 				<span>Description</span>
 				<span>Size</span>
-				<button ace-reorder-list-item-btn>&#9776;</button>
+				<button
+						ace-reorder-list-item-btn
+						aria-describedby="reorder-list-btn-instructions"
+						aria-label="Move item 15">
+					&#9776;
+				</button>
 			</li>
 			<li ace-reorder-list-item>
 				<span>Item 16</span>
 				<span>Description</span>
 				<span>Size</span>
-				<button ace-reorder-list-item-btn>&#9776;</button>
+				<button
+						ace-reorder-list-item-btn
+						aria-describedby="reorder-list-btn-instructions"
+						aria-label="Move item 16">
+					&#9776;
+				</button>
 			</li>
 			<li ace-reorder-list-item>
 				<span>Item 17</span>
 				<span>Description</span>
 				<span>Size</span>
-				<button ace-reorder-list-item-btn>&#9776;</button>
+				<button
+						ace-reorder-list-item-btn
+						aria-describedby="reorder-list-btn-instructions"
+						aria-label="Move item 17">
+					&#9776;
+				</button>
 			</li>
 			<li ace-reorder-list-item>
 				<span>Item 18</span>
 				<span>Description</span>
 				<span>Size</span>
-				<button ace-reorder-list-item-btn>&#9776;</button>
+				<button
+						ace-reorder-list-item-btn
+						aria-describedby="reorder-list-btn-instructions"
+						aria-label="Move item 18">
+					&#9776;
+				</button>
 			</li>
 			<li ace-reorder-list-item>
 				<span>Item 19</span>
 				<span>Description</span>
 				<span>Size</span>
-				<button ace-reorder-list-item-btn>&#9776;</button>
+				<button
+						ace-reorder-list-item-btn
+						aria-describedby="reorder-list-btn-instructions"
+						aria-label="Move item 19">
+					&#9776;
+				</button>
 			</li>
 			<li ace-reorder-list-item>
 				<span>Item 20</span>
 				<span>Description</span>
 				<span>Size</span>
-				<button ace-reorder-list-item-btn>&#9776;</button>
+				<button
+						ace-reorder-list-item-btn
+						aria-describedby="reorder-list-btn-instructions"
+						aria-label="Move item 20">
+					&#9776;
+				</button>
 			</li>
 		</ul>
 	</ace-reorder-list>
