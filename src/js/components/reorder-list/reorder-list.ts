@@ -99,15 +99,18 @@ export default class ReorderList extends HTMLElement {
 				newIndex + 1;
 			this.grabbedItemEl = this.listEl!.insertBefore(this.grabbedItemEl!, this.liEls[insertBeforeElIndex]);
 			this.liEls = [...this.querySelectorAll(`[${ATTRS.ITEM}]`)] as HTMLLIElement[];
-
-			// Hack to update SR list numbering
-			const grabbedItemEl = this.grabbedItemEl!;
-			this.focusDummyEl!.focus();
-			setTimeout(() => {
-				grabbedItemEl.focus();
+			this.grabbedItemEl.addEventListener('focus', () => {
 				this.liveRegionEl!.textContent =
 					`${this.selectedElName} dropped at position ${newIndex + 1}.`;
-			}, 100);
+			}, { once: true });
+			this.grabbedItemEl.focus();
+
+			const grabbedItemEl = this.grabbedItemEl!;
+			// Hack to update SR list numbering
+			// this.focusDummyEl!.focus();
+			// setTimeout(() => {
+			// 	grabbedItemEl.focus();
+			// }, 100);
 		}
 		this.resetMove();
 	}
