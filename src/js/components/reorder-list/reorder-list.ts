@@ -102,28 +102,31 @@ export default class ReorderList extends HTMLElement {
 				newIndex + 1;
 
 			const grabbedItemEl = this.listEl!.insertBefore(this.grabbedItemEl!, this.liEls![insertBeforeElIndex]);
+			grabbedItemEl!.focus();
+			this.liveRegionEl!.textContent = `Item moved to position ${newIndex! + 1}`;
 
-			// update aria labels
+			this.droppingItem = false;
 
-			// VoiceOver doesn't announce live region changes if an element is focused on immediately before or after.
-			// This hack forces VoiceOver to announce the confirmation of the move to the user
-			this.moveConfirmationEl!.textContent = `This item is now at position ${newIndex! + 1}`;
 
-			this.focusDummyEl!.focus();
+			// // VoiceOver doesn't announce live region changes if an element is focused on immediately before or after.
+			// // This hack forces VoiceOver to announce the confirmation of the move to the user
+			// this.moveConfirmationEl!.textContent = `This item is now at position ${newIndex! + 1}`;
+			// this.focusDummyEl!.focus();
 
-			// Hack that forces the update of the li element order as read out by VoiceOver (e.g. '1 of 20')
-			this.listEl!.style.display = 'none';
-			setTimeout(() => {
-				this.listEl!.style.display = '';
-				this.liveRegionEl!.textContent = `Item moved to position ${newIndex! + 1}`;
+			// // Hack that forces the update of the li element order as read out by VoiceOver (e.g. '1 of 20')
+			// this.listEl!.style.display = 'none';
+			// setTimeout(() => {
+			// 	this.listEl!.style.display = '';
+			// 	this.liveRegionEl!.textContent = `Item moved to position ${newIndex! + 1}`;
 
-				grabbedItemEl!.addEventListener('blur', () => {
-					this.moveConfirmationEl!.textContent = '';
-				}, { once: true });
+			// 	grabbedItemEl!.addEventListener('blur', () => {
+			// 		this.moveConfirmationEl!.textContent = '';
+			// 		this.liveRegionEl!.textContent = '';
+			// 	}, { once: true });
 
-				grabbedItemEl!.focus();
-				this.droppingItem = false;
-			}, 0);
+			// 	grabbedItemEl!.focus();
+			// 	this.droppingItem = false;
+			// }, 0);
 		}
 		this.resetMove();
 	}
@@ -133,8 +136,19 @@ export default class ReorderList extends HTMLElement {
 		Handle focusout event on list
 	*/
 	private focusOutHandler(e: Event): void {
-		const targetBtn = (e.target as Element).closest(`[${ATTRS.BTN}]`);
-		if (targetBtn && !this.droppingItem) {
+		const targetEl = (e.target as Element);
+		const focusOutOnBtn = targetEl.hasAttribute(ATTRS.BTN);
+		const focusOutOnItem = targetEl.hasAttribute(ATTRS.ITEM);
+
+		if (focusOutOnItem || (focusOutOnBtn && !this.droppingItem)) {
+			this.liveRegionEl!.textContent = '';
+			// this.moveConfirmationEl!.textContent = '';
+		}
+
+		if (focusOutOnBtn && !this.droppingItem) {
+			if (this.grabbedItemEl) {
+				this.liveRegionEl!.textContent = 'Item move cancelled';
+			}
 			this.resetMove();
 		}
 	}
@@ -423,7 +437,6 @@ export default class ReorderList extends HTMLElement {
 		this.grabbedItemEl = null;
 		this.grabbedItemIndex = null;
 		this.grabbedItemIndexChange = 0;
-		this.liveRegionEl!.textContent = '';
 
 		this.liEls![this.highlightedItemIndex!]?.removeAttribute(ATTRS.HIGHLIGHTED_ITEM);
 		this.highlightedItemIndex = null;
