@@ -8,23 +8,19 @@ export const REORDER_LIST = `ace-reorder-list`;
 /* CONSTANTS */
 export const ATTRS = {
 	BTN: `${REORDER_LIST}-item-btn`,
-	FOCUS_DUMMY: `${REORDER_LIST}-focus-dummy`,
 	GRABBED_ITEM: `${REORDER_LIST}-grabbed-item`,
 	HIGHLIGHTED_ITEM: `${REORDER_LIST}-highlighted-item`,
 	ITEM: `${REORDER_LIST}-item`,
 	LIST: `${REORDER_LIST}-list`,
 	LIVE_REGION: `${REORDER_LIST}-live-region`,
-	MOVE_CONFIRMATION: `${REORDER_LIST}-move-confirmation`,
 	REORDERING: `${REORDER_LIST}-reordering`,
 };
-
 
 
 /* CLASS */
 export default class ReorderList extends HTMLElement {
 	private cursorStartPos: number | undefined;
 	private droppingItem = false;
-	// private focusDummyEl: HTMLDivElement | null = null;
 	private grabbedItemEl: HTMLLIElement | null = null;
 	private grabbedItemElHeight: number | undefined;
 	private grabbedItemIndex: number | null = null;
@@ -35,7 +31,6 @@ export default class ReorderList extends HTMLElement {
 	private listElBottom: number | undefined;
 	private listElTop: number | undefined;
 	private liveRegionEl: HTMLDivElement | undefined;
-	// private moveConfirmationEl: HTMLDivElement | null = null;
 	private movingItemEls = false;
 	private nextSiblingIndex: number | undefined;
 	private nextSiblingMidpoint: number | undefined;
@@ -80,8 +75,6 @@ export default class ReorderList extends HTMLElement {
 		this.listEl = this.querySelector(`[${ATTRS.LIST}]`) as HTMLUListElement | HTMLOListElement;
 		this.itemEls = this.listEl.getElementsByTagName('li');
 		this.liveRegionEl = this.querySelector(`[${ATTRS.LIVE_REGION}]`) as HTMLDivElement;
-		// this.focusDummyEl = this.querySelector(`[${ATTRS.FOCUS_DUMMY}]`) as HTMLDivElement;
-		// this.moveConfirmationEl = this.querySelector(`[${ATTRS.MOVE_CONFIRMATION}]`) as HTMLDivElement;
 
 		ReorderList.updateItemsAriaLabels(this.itemEls);
 
@@ -123,26 +116,6 @@ export default class ReorderList extends HTMLElement {
 			this.updateLiveRegion(`Item moved to position ${newIndex! + 1}`);
 
 			this.droppingItem = false;
-
-			// // VoiceOver sometimes doesn't announce live region changes if an element is focused on immediately before or after.
-			// // This hack forces VoiceOver to announce the confirmation of the move to the user
-			// this.moveConfirmationEl!.textContent = `This item is now at position ${newIndex! + 1}`;
-			// this.focusDummyEl!.focus();
-
-			// // Hack that forces the update of the li element order as read out by VoiceOver (e.g. '1 of 20')
-			// this.listEl!.style.display = 'none';
-			// setTimeout(() => {
-			// 	this.listEl!.style.display = '';
-			// 	this.liveRegionEl!.textContent = `Item moved to position ${newIndex! + 1}`;
-
-			// 	grabbedItemEl!.addEventListener('blur', () => {
-			// 		this.moveConfirmationEl!.textContent = '';
-			// 		this.liveRegionEl!.textContent = '';
-			// 	}, { once: true });
-
-			// 	grabbedItemEl!.focus();
-			// 	this.droppingItem = false;
-			// }, 0);
 		}
 		this.resetMove();
 	}
@@ -154,12 +127,6 @@ export default class ReorderList extends HTMLElement {
 	private focusOutHandler(e: Event): void {
 		const targetEl = (e.target as Element);
 		const focusOutOnBtn = targetEl.hasAttribute(ATTRS.BTN);
-		// const focusOutOnItem = targetEl.hasAttribute(ATTRS.ITEM);
-
-		// if (focusOutOnItem || (focusOutOnBtn && !this.droppingItem)) {
-		// 	this.liveRegionEl!.textContent = '';
-		// 	// this.moveConfirmationEl!.textContent = '';
-		// }
 
 		if (focusOutOnBtn && !this.droppingItem) {
 			if (this.grabbedItemEl) {
