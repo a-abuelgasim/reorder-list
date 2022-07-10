@@ -21,11 +21,11 @@ export default class ReorderList extends HTMLElement {
 	private grabbedItemEl: HTMLLIElement | null = null;
 	private grabbedItemElHeight: number | undefined;
 	private grabbedItemIndex: number | null = null;
+	private grabbedItemIndexChange = 0;
 	private itemEls: HTMLCollectionOf<HTMLLIElement> | null = null;
 	private listEl: HTMLUListElement | HTMLOListElement | undefined;
 	private listElBottom: number | undefined;
 	private listElTop: number | undefined;
-	private grabbedItemIndexChange = 0;
 	private movingItemEls = false;
 	private nextSiblingIndex: number | undefined;
 	private nextSiblingMidpoint: number | undefined;
