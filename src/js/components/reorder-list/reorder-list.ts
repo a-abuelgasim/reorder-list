@@ -40,8 +40,8 @@ export default class ReorderList extends HTMLElement {
 
 
 		/* CLASS METHOD BINDINGS */
-		this.focusOutHandler = this.focusOutHandler.bind(this);
 		this.dropGrabbedEl = this.dropGrabbedEl.bind(this);
+		this.focusOutHandler = this.focusOutHandler.bind(this);
 		this.getNextSiblingMidpoint = this.getNextSiblingMidpoint.bind(this);
 		this.getPrevSiblingMidpoint = this.getPrevSiblingMidpoint.bind(this);
 		this.grabItem = this.grabItem.bind(this);
@@ -61,7 +61,6 @@ export default class ReorderList extends HTMLElement {
 
 
 		/* ADD EVENT LISTENERS */
-		this.listEl.addEventListener('focusout', this.focusOutHandler);
 		this.listEl.addEventListener('focusout', this.focusOutHandler);
 		this.listEl.addEventListener('keydown', this.keyDownHandler);
 		this.listEl.addEventListener('pointerdown', this.pointerDownHandler);
@@ -99,12 +98,10 @@ export default class ReorderList extends HTMLElement {
 		Handle focusout event on list
 	*/
 	private focusOutHandler(e: Event): void {
-		const targetBtn = (e.target as Element).closest(`[${ATTRS.BTN}]`);
-		if (!targetBtn) {
-			return;
+		const focusOutOnBtn = (e.target as Element).closest(`[${ATTRS.BTN}]`);
+		if (focusOutOnBtn) {
+			this.resetMove();
 		}
-
-		this.resetMove();
 	}
 
 
@@ -369,6 +366,7 @@ export default class ReorderList extends HTMLElement {
 			return;
 		}
 
+		// Remove translations
 		this.listEl!.removeAttribute(ATTRS.REORDERING);
 		[...this.itemEls!].forEach(itemEl => itemEl.style.transform = '');
 		this.grabbedItemEl.style.top = '';
@@ -404,7 +402,7 @@ export default class ReorderList extends HTMLElement {
 
 
 	/*
-		Translate given itemEl in Y-axis by a given value
+		Translate given itemEl by a given value
 	*/
 	private translateItemEl(itemEl: HTMLLIElement, translateVal: number): void {
 		const currentTransform = itemEl.style.transform;
