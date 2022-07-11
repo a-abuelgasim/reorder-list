@@ -81,7 +81,6 @@ module.exports = {
 			'error',
 			'always',
 		],
-		// "prefer-const": "off",
 		'prefer-const': [
 			'error',
 			{

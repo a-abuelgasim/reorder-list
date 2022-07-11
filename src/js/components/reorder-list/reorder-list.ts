@@ -8,35 +8,30 @@ export const REORDER_LIST = `ace-reorder-list`;
 /* CONSTANTS */
 export const ATTRS = {
 	BTN: `${REORDER_LIST}-item-btn`,
-	FOCUS_DUMMY: `${REORDER_LIST}-focus-dummy`,
 	GRABBED_ITEM: `${REORDER_LIST}-grabbed-item`,
 	HIGHLIGHTED_ITEM: `${REORDER_LIST}-highlighted-item`,
 	ITEM: `${REORDER_LIST}-item`,
 	LIST: `${REORDER_LIST}-list`,
 	LIVE_REGION: `${REORDER_LIST}-live-region`,
-	MOVE_CONFIRMATION: `${REORDER_LIST}-move-confirmation`,
 	REORDERING: `${REORDER_LIST}-reordering`,
 };
-
 
 
 /* CLASS */
 export default class ReorderList extends HTMLElement {
 	private cursorStartPos: number | undefined;
 	private droppingItem = false;
-	private focusDummyEl: HTMLDivElement | null = null;
 	private grabbedItemEl: HTMLLIElement | null = null;
 	private grabbedItemElHeight: number | undefined;
 	private grabbedItemIndex: number | null = null;
 	private grabbedItemIndexChange = 0;
 	private highlightedItemIndex: number | null = null;
-	private liEls: HTMLCollectionOf<HTMLLIElement> | null = null;
+	private itemEls: HTMLCollectionOf<HTMLLIElement> | null = null;
 	private listEl: HTMLUListElement | HTMLOListElement | undefined;
 	private listElBottom: number | undefined;
 	private listElTop: number | undefined;
 	private liveRegionEl: HTMLDivElement | undefined;
-	private moveConfirmationEl: HTMLDivElement | null = null;
-	private movingLiEls = false;
+	private movingItemEls = false;
 	private nextSiblingIndex: number | undefined;
 	private nextSiblingMidpoint: number | undefined;
 	private prevSiblingIndex: number | undefined;
@@ -58,17 +53,29 @@ export default class ReorderList extends HTMLElement {
 		this.pointerMoveHandler = this.pointerMoveHandler.bind(this);
 		this.pointerUpHandler = this.pointerUpHandler.bind(this);
 		this.resetMove = this.resetMove.bind(this);
+		this.updateLiveRegion = this.updateLiveRegion.bind(this);
 		this.updateSiblingIndexes = this.updateSiblingIndexes.bind(this);
 	}
 
 
+	/*
+		Update the aria lables of the elements
+	*/
+	static updateItemsAriaLabels(itemEls: HTMLCollectionOf<HTMLLIElement>): void {
+		[...itemEls].forEach((itemEl, i) => {
+			itemEl.setAttribute('aria-label', `Item ${i + 1}`);
+			const btnEl = itemEl.querySelector(`[${ATTRS.BTN}]`);
+			btnEl?.setAttribute('aria-label', `Grab item ${i + 1}`);
+		});
+	}
+
 	public connectedCallback(): void {
 		/* GET DOM ELEMENTS */
-		this.listEl = this.querySelector(`[${ATTRS.LIST}]`) as HTMLUListElement | HTMLOListElement;
-		this.focusDummyEl = this.querySelector(`[${ATTRS.FOCUS_DUMMY}]`) as HTMLDivElement;
-		this.liEls = this.listEl.getElementsByTagName('li');
 		this.liveRegionEl = this.querySelector(`[${ATTRS.LIVE_REGION}]`) as HTMLDivElement;
-		this.moveConfirmationEl = this.querySelector(`[${ATTRS.MOVE_CONFIRMATION}]`) as HTMLDivElement;
+		this.listEl = this.querySelector(`[${ATTRS.LIST}]`) as HTMLUListElement | HTMLOListElement;
+		this.itemEls = this.listEl.getElementsByTagName('li');
+
+		ReorderList.updateItemsAriaLabels(this.itemEls);
 
 
 		/* ADD EVENT LISTENERS */
@@ -101,29 +108,13 @@ export default class ReorderList extends HTMLElement {
 				newIndex :
 				newIndex + 1;
 
-			const grabbedItemEl = this.listEl!.insertBefore(this.grabbedItemEl!, this.liEls![insertBeforeElIndex]);
+			const grabbedItemEl = this.listEl!.insertBefore(this.grabbedItemEl!, this.itemEls![insertBeforeElIndex]);
+			ReorderList.updateItemsAriaLabels(this.itemEls!);
 
-			// update aria labels
+			grabbedItemEl!.focus();
+			this.updateLiveRegion(`Item moved to position ${newIndex! + 1}`);
 
-			// VoiceOver doesn't announce live region changes if an element is focused on immediately before or after.
-			// This hack forces VoiceOver to announce the confirmation of the move to the user
-			this.moveConfirmationEl!.textContent = `This item is now at position ${newIndex! + 1}`;
-
-			this.focusDummyEl!.focus();
-
-			// Hack that forces the update of the li element order as read out by VoiceOver (e.g. '1 of 20')
-			this.listEl!.style.display = 'none';
-			setTimeout(() => {
-				this.listEl!.style.display = '';
-				this.liveRegionEl!.textContent = `Item moved to position ${newIndex! + 1}`;
-
-				grabbedItemEl!.addEventListener('blur', () => {
-					this.moveConfirmationEl!.textContent = '';
-				}, { once: true });
-
-				grabbedItemEl!.focus();
-				this.droppingItem = false;
-			}, 0);
+			this.droppingItem = false;
 		}
 		this.resetMove();
 	}
@@ -133,8 +124,11 @@ export default class ReorderList extends HTMLElement {
 		Handle focusout event on list
 	*/
 	private focusOutHandler(e: Event): void {
-		const targetBtn = (e.target as Element).closest(`[${ATTRS.BTN}]`);
-		if (targetBtn && !this.droppingItem) {
+		const focusOutOnBtn = (e.target as Element).closest(`[${ATTRS.BTN}]`);
+		if (focusOutOnBtn && !this.droppingItem) {
+			if (this.grabbedItemEl) {
+				this.updateLiveRegion('Item move cancelled');
+			}
 			this.resetMove();
 		}
 	}
@@ -168,7 +162,7 @@ export default class ReorderList extends HTMLElement {
 		Get midpoint of sibling at given index. Returns Number.POSITIVE_INFINITY if there's no item at given index.
 	*/
 	private getNextSiblingMidpoint(siblingIndex: number): number {
-		return this.getSiblingMidpoint(this.liEls![siblingIndex], true);
+		return this.getSiblingMidpoint(this.itemEls![siblingIndex], true);
 	}
 
 
@@ -176,7 +170,7 @@ export default class ReorderList extends HTMLElement {
 		Get midpoint of sibling at given index. Returns Number.NEGATIVE_INFINITY if there's no item at given index.
 	*/
 	private getPrevSiblingMidpoint(siblingIndex: number): number {
-		return this.getSiblingMidpoint(this.liEls![siblingIndex]);
+		return this.getSiblingMidpoint(this.itemEls![siblingIndex]);
 	}
 
 
@@ -198,10 +192,9 @@ export default class ReorderList extends HTMLElement {
 	*/
 	private grabItem(element: HTMLLIElement, setGrabbedStyles = true): void {
 		this.grabbedItemEl = element;
-		const index = [...this.liEls!].indexOf(element);
+		const index = [...this.itemEls!].indexOf(element);
 		this.grabbedItemIndex = index;
-		this.liveRegionEl!.textContent =
-			`Item at position ${index + 1} grabbed. Press Up or Down arrow, Home or End keys to navigate to a new position. Press Escape to cancel.`;
+		this.updateLiveRegion(`Item ${index + 1} grabbed. Press Up or Down arrow, Home or End keys to navigate to a new position. Press Escape to cancel.`);
 
 		if (!setGrabbedStyles) {
 			return;
@@ -232,14 +225,14 @@ export default class ReorderList extends HTMLElement {
 					this.highlightedItemIndex = this.grabbedItemIndex;
 				} else if (this.grabbedItemEl) {
 					e.preventDefault();
-					this.liEls![this.highlightedItemIndex!]?.removeAttribute(ATTRS.HIGHLIGHTED_ITEM);
+					this.itemEls![this.highlightedItemIndex!]?.removeAttribute(ATTRS.HIGHLIGHTED_ITEM);
 					this.grabbedItemIndexChange = this.highlightedItemIndex! - this.grabbedItemIndex!;
 					this.dropGrabbedEl();
 				}
 				break;
 			case 'Escape':
 				if (this.grabbedItemEl) {
-					this.liveRegionEl!.textContent = 'Item move cancelled';
+					this.updateLiveRegion('Item move cancelled');
 					this.resetMove();
 				}
 				break;
@@ -252,11 +245,11 @@ export default class ReorderList extends HTMLElement {
 				}
 
 				e.preventDefault();
-				const lastLiElIndex = this.liEls!.length - 1;
+				const lastLiElIndex = this.itemEls!.length - 1;
 
 				if (keyPressed.includes('Arrow')) {
 					const moveDirection = keyPressed == 'ArrowUp' ? -1 : 1;
-					this.liEls![this.highlightedItemIndex].removeAttribute(ATTRS.HIGHLIGHTED_ITEM);
+					this.itemEls![this.highlightedItemIndex].removeAttribute(ATTRS.HIGHLIGHTED_ITEM);
 					this.highlightedItemIndex += moveDirection;
 					if (this.highlightedItemIndex == this.grabbedItemIndex) {
 						this.highlightedItemIndex += moveDirection;
@@ -275,7 +268,7 @@ export default class ReorderList extends HTMLElement {
 					this.highlightedItemIndex = keyPressed == 'Home' ? 0 : lastLiElIndex;
 				}
 
-				const highlightedItemEl = this.liEls![this.highlightedItemIndex];
+				const highlightedItemEl = this.itemEls![this.highlightedItemIndex];
 				if (!highlightedItemEl) {
 					return;
 				}
@@ -287,8 +280,7 @@ export default class ReorderList extends HTMLElement {
 					} as ScrollIntoViewOptions);
 				}
 
-				this.liveRegionEl!.textContent =
-					`You are now at position ${this.highlightedItemIndex + 1} of ${this.liEls!.length}. Press Enter to drop grabbed item here. Press Escape to cancel move.`;
+				this.updateLiveRegion(`You are now at position ${this.highlightedItemIndex + 1} of ${this.itemEls!.length}. Press Enter to drop grabbed item here. Press Escape to cancel move.`);
 				break;
 			}
 		}
@@ -326,7 +318,7 @@ export default class ReorderList extends HTMLElement {
 		Handle pointermove events on window
 	*/
 	private pointerMoveHandler(event: Event): void {
-		if (this.movingLiEls) {
+		if (this.movingItemEls) {
 			return;
 		}
 
@@ -357,7 +349,7 @@ export default class ReorderList extends HTMLElement {
 
 		// If cursor crosses previous or next sibling midpoint
 		if (cursorPos < this.prevSiblingMidpoint! || cursorPos > this.nextSiblingMidpoint!) {
-			this.movingLiEls = true;
+			this.movingItemEls = true;
 			const moveDirection = movementY < 0 ? -1 : 1;
 			const translateVal = -(this.grabbedItemElHeight! * moveDirection);
 			const movingUp = moveDirection == -1;
@@ -365,7 +357,7 @@ export default class ReorderList extends HTMLElement {
 
 			while (
 				(movingUp && this.prevSiblingIndex! >= 0) ||
-				(movingDown && this.nextSiblingIndex! < this.liEls!.length)
+				(movingDown && this.nextSiblingIndex! < this.itemEls!.length)
 			){
 				if (
 					(movingUp && cursorPos >= this.prevSiblingMidpoint!) ||
@@ -375,8 +367,8 @@ export default class ReorderList extends HTMLElement {
 				}
 
 				const elToTranslateIndex = movingUp ? this.prevSiblingIndex! : this.nextSiblingIndex!;
-				const elToTranslate = this.liEls![elToTranslateIndex];
-				this.translateLiEl(elToTranslate, translateVal);
+				const elToTranslate = this.itemEls![elToTranslateIndex];
+				this.translateItemEl(elToTranslate, translateVal);
 				this.updateSiblingIndexes(moveDirection);
 
 				// Update stored sibling midpoints
@@ -392,7 +384,7 @@ export default class ReorderList extends HTMLElement {
 				this.grabbedItemIndexChange += moveDirection;
 			}
 
-			this.movingLiEls = false;
+			this.movingItemEls = false;
 		}
 	}
 
@@ -407,7 +399,7 @@ export default class ReorderList extends HTMLElement {
 
 		// Remove translations
 		this.listEl!.removeAttribute(ATTRS.REORDERING);
-		[...this.liEls!].forEach(liEl => liEl.style.transform = '');
+		[...this.itemEls!].forEach(itemEl => itemEl.style.transform = '');
 		this.grabbedItemEl.style.top = '';
 
 		this.dropGrabbedEl();
@@ -423,9 +415,8 @@ export default class ReorderList extends HTMLElement {
 		this.grabbedItemEl = null;
 		this.grabbedItemIndex = null;
 		this.grabbedItemIndexChange = 0;
-		this.liveRegionEl!.textContent = '';
 
-		this.liEls![this.highlightedItemIndex!]?.removeAttribute(ATTRS.HIGHLIGHTED_ITEM);
+		this.itemEls![this.highlightedItemIndex!]?.removeAttribute(ATTRS.HIGHLIGHTED_ITEM);
 		this.highlightedItemIndex = null;
 	}
 
@@ -442,13 +433,23 @@ export default class ReorderList extends HTMLElement {
 
 
 	/*
-		Translate given liEl in Y-axis by a given value
+		Translate given itemEl by a given value
 	*/
-	private translateLiEl(liEl: HTMLLIElement, translateVal: number): void {
-		const currentTransform = liEl.style.transform;
-		liEl.style.transform = currentTransform ?
+	private translateItemEl(itemEl: HTMLLIElement, translateVal: number): void {
+		const currentTransform = itemEl.style.transform;
+		itemEl.style.transform = currentTransform ?
 			'' :
 			`translate3d(0px, ${translateVal}px, 0px)`;
+	}
+
+
+	/*
+		Update the live region's text content to announce message to screen reader users
+	*/
+	private updateLiveRegion(message: string): void {
+		this.liveRegionEl!.textContent = message;
+		// Clear after 500ms so live region can't be read by screen reader when changing screen reader focus while navigating
+		setTimeout(() => {this.liveRegionEl!.textContent = '';}, 500);
 	}
 
 
