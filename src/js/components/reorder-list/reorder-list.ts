@@ -112,10 +112,14 @@ export default class ReorderList extends HTMLElement {
 			const grabbedItemEl = this.listEl!.insertBefore(this.grabbedItemEl!, this.itemEls![insertBeforeElIndex]);
 			ReorderList.updateItemsAriaLabels(this.itemEls!);
 
-			grabbedItemEl!.focus();
-			this.updateLiveRegion(`Item moved to position ${newIndex! + 1}`);
-
-			this.droppingItem = false;
+			// Hack that forces the update of the li element order as read out by VoiceOver (e.g. '1 of 20')
+			this.listEl!.style.display = 'none';
+			setTimeout(() => {
+				this.listEl!.style.display = '';
+				this.updateLiveRegion(`Item moved to position ${newIndex! + 1}`);
+				grabbedItemEl!.focus();
+				this.droppingItem = false;
+			}, 0);
 		}
 		this.resetMove();
 	}
