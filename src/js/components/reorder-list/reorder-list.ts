@@ -69,6 +69,7 @@ export default class ReorderList extends HTMLElement {
 		});
 	}
 
+
 	public connectedCallback(): void {
 		/* GET DOM ELEMENTS */
 		this.liveRegionEl = this.querySelector(`[${ATTRS.LIVE_REGION}]`) as HTMLDivElement;
