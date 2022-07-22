@@ -1,3 +1,4 @@
+const deviceHasTouchScreen = window.matchMedia('(pointer: coarse)').matches;
 const useScrollIntoView = (): boolean => 'scrollBehavior' in document.documentElement.style;
 
 
@@ -27,6 +28,7 @@ export default class ReorderList extends HTMLElement {
 	private grabbedItemIndexChange = 0;
 	private highlightedItemIndex: number | null = null;
 	private itemEls: HTMLCollectionOf<HTMLLIElement> | null = null;
+	private itemGrabbedUsingTouchAT = false;
 	private listEl: HTMLUListElement | HTMLOListElement | undefined;
 	private listElBottom: number | undefined;
 	private listElTop: number | undefined;
@@ -43,6 +45,7 @@ export default class ReorderList extends HTMLElement {
 
 
 		/* CLASS METHOD BINDINGS */
+		this.cancelTouchATMove = this.cancelTouchATMove.bind(this);
 		this.dropGrabbedEl = this.dropGrabbedEl.bind(this);
 		this.focusOutHandler = this.focusOutHandler.bind(this);
 		this.getNextSiblingMidpoint = this.getNextSiblingMidpoint.bind(this);
@@ -199,7 +202,12 @@ export default class ReorderList extends HTMLElement {
 		this.grabbedItemEl = element;
 		const index = [...this.itemEls!].indexOf(element);
 		this.grabbedItemIndex = index;
-		this.updateLiveRegion(`Item ${index + 1} grabbed. Press Up or Down arrow, Home or End keys to navigate to a new position. Press Escape to cancel.`);
+
+		const liveRegionMsg = this.itemGrabbedUsingTouchAT ?
+			`Click on another item to move grabbed item to it's position.` :
+			`Press Up or Down arrow, Home or End keys to navigate to a new position. Press Escape to cancel.`;
+
+		this.updateLiveRegion(`Item ${index + 1} grabbed. ${liveRegionMsg}`);
 
 		if (!setGrabbedStyles) {
 			return;
@@ -293,19 +301,46 @@ export default class ReorderList extends HTMLElement {
 
 
 	/*
+		Cancel move started using touch Assistive Tech
+	*/
+	private cancelTouchATMove(): void {
+		this.itemGrabbedUsingTouchAT = false;
+		this.updateLiveRegion('Item move cancelled');
+		this.resetMove();
+	}
+
+
+	/*
 		Handle pointerdown events on list
 	*/
 	private pointerDownHandler(event: Event): void {
 		const targetEl = event.target as Element;
 		const reorderBtnClicked = targetEl.closest(`[${ATTRS.BTN}]`);
+		const itemElClicked = targetEl.closest(`[${ATTRS.ITEM}]`) as HTMLLIElement;
+
+		// Check if event triggered by touch assitive tech
+		const pointerType = (event as PointerEvent).pointerType;
+		// If reorder button clicked using touch assistive tech
+		if (reorderBtnClicked && pointerType == 'mouse' && deviceHasTouchScreen) {
+			this.itemGrabbedUsingTouchAT = true;
+			this.listEl!.addEventListener('pointermove', this.cancelTouchATMove, { once: true });
+		}
+
+		// If itemEl clicked using touch assistive tech
+		if (itemElClicked && !reorderBtnClicked && this.itemGrabbedUsingTouchAT && pointerType == 'touch' && deviceHasTouchScreen) {
+			const x = [...this.itemEls!].indexOf(targetEl.closest(`[${ATTRS.ITEM}]`) as HTMLLIElement);
+			this.grabbedItemIndexChange = x - this.grabbedItemIndex!;
+			this.listEl!.removeEventListener('pointermove', this.cancelTouchATMove);
+			this.itemGrabbedUsingTouchAT = false;
+			return;
+		}
+
 		if (!reorderBtnClicked) {
 			return;
 		}
 
 		this.cursorStartPos = (event as PointerEvent).pageY;
-
-		const itemToGrabEl = targetEl.closest(`[${ATTRS.ITEM}]`) as HTMLLIElement;
-		this.grabItem(itemToGrabEl);
+		this.grabItem(itemElClicked);
 
 		[this.listElTop, this.listElBottom] = this.getListBounds(this.listEl!);
 		this.grabbedItemElHeight = this.getItemHeight(this.grabbedItemEl!);
@@ -398,7 +433,7 @@ export default class ReorderList extends HTMLElement {
 		Handle pointerup events on window
 	*/
 	private pointerUpHandler(): void {
-		if (!this.grabbedItemEl || (!this.grabbedItemIndex && this.grabbedItemIndex != 0)) {
+		if (!this.grabbedItemEl || (!this.grabbedItemIndex && this.grabbedItemIndex != 0) || this.itemGrabbedUsingTouchAT) {
 			return;
 		}
 
