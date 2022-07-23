@@ -190,6 +190,7 @@ export default class ReorderList extends HTMLElement {
 		if (!itemElSelected) {
 			return;
 		}
+
 		const btnSelected = target.closest(`[${ATTRS.BTN}]`);
 		const keyPressed = (e as KeyboardEvent).key;
 		switch(keyPressed) {
