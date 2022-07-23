@@ -126,8 +126,6 @@ export default class ReorderList extends HTMLElement {
 	private focusOutHandler(e: Event): void {
 		const focusOutOnBtn = (e.target as Element).closest(`[${ATTRS.BTN}]`);
 		if (focusOutOnBtn && this.grabbedItemEl && !this.droppingItem) {
-			// if (this.grabbedItemEl) {
-			// }
 			this.updateLiveRegion('Item move cancelled');
 			this.resetMove();
 		}
