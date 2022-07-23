@@ -382,7 +382,6 @@ export default class ReorderList extends HTMLElement {
 		Reset grabbed item state
 	*/
 	private resetMove(): void {
-		console.log('reset move');
 		this.grabbedItemEl?.removeAttribute(ATTRS.GRABBED_ITEM);
 		this.grabbedItemEl = null;
 		this.grabbedItemIndex = null;
