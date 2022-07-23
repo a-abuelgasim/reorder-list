@@ -111,7 +111,6 @@ export default class ReorderList extends HTMLElement {
 
 			const grabbedItemEl = this.listEl!.insertBefore(this.grabbedItemEl!, this.itemEls![insertBeforeElIndex]);
 			ReorderList.updateItemsAriaLabels(this.itemEls!);
-
 			grabbedItemEl!.focus();
 			this.updateLiveRegion(`Item moved to position ${newIndex! + 1}`);
 
@@ -126,10 +125,10 @@ export default class ReorderList extends HTMLElement {
 	*/
 	private focusOutHandler(e: Event): void {
 		const focusOutOnBtn = (e.target as Element).closest(`[${ATTRS.BTN}]`);
-		if (focusOutOnBtn && !this.droppingItem) {
-			if (this.grabbedItemEl) {
-				this.updateLiveRegion('Item move cancelled');
-			}
+		if (focusOutOnBtn && this.grabbedItemEl && !this.droppingItem) {
+			// if (this.grabbedItemEl) {
+			// }
+			this.updateLiveRegion('Item move cancelled');
 			this.resetMove();
 		}
 	}
@@ -412,6 +411,7 @@ export default class ReorderList extends HTMLElement {
 		Reset grabbed item state
 	*/
 	private resetMove(): void {
+		console.log('reset move');
 		this.grabbedItemEl?.removeAttribute(ATTRS.GRABBED_ITEM);
 		this.grabbedItemEl = null;
 		this.grabbedItemIndex = null;
