@@ -19,6 +19,7 @@ export const ATTRS = {
 /* CLASS */
 export default class ReorderList extends HTMLElement {
 	private cursorStartPos: number | undefined;
+	private droppingItem = false;
 	private grabbedItemEl: HTMLLIElement | null = null;
 	private grabbedItemElHeight: number | undefined;
 	private grabbedItemIndex: number | null = null;
@@ -84,11 +85,15 @@ export default class ReorderList extends HTMLElement {
 	*/
 	private dropGrabbedEl(): void {
 		if (this.grabbedItemIndexChange) {
+			this.droppingItem = true;
 			const newIndex = this.grabbedItemIndex! + this.grabbedItemIndexChange;
 			const insertBeforeElIndex = this.grabbedItemIndexChange < 0 ?
 				newIndex :
 				newIndex + 1;
-			this.listEl!.insertBefore(this.grabbedItemEl!, this.itemEls![insertBeforeElIndex]);
+			const grabbedItemEl = this.listEl!.insertBefore(this.grabbedItemEl!, this.itemEls![insertBeforeElIndex]);
+			const itemElSelectedBtn = grabbedItemEl.querySelector(`[${ATTRS.BTN}]`) as HTMLButtonElement;
+			itemElSelectedBtn?.focus();
+			this.droppingItem = false;
 		}
 		this.resetMove();
 	}
@@ -99,7 +104,7 @@ export default class ReorderList extends HTMLElement {
 	*/
 	private focusOutHandler(e: Event): void {
 		const focusOutOnBtn = (e.target as Element).closest(`[${ATTRS.BTN}]`);
-		if (focusOutOnBtn) {
+		if (focusOutOnBtn && this.grabbedItemEl && !this.droppingItem) {
 			this.resetMove();
 		}
 	}
@@ -197,9 +202,6 @@ export default class ReorderList extends HTMLElement {
 					this.itemEls![this.highlightedItemIndex!]?.removeAttribute(ATTRS.HIGHLIGHTED_ITEM);
 					this.grabbedItemIndexChange = this.highlightedItemIndex! - this.grabbedItemIndex!;
 					this.dropGrabbedEl();
-					const itemElSelectedBtn = itemElSelected.querySelector(`[${ATTRS.BTN}]`) as HTMLButtonElement;
-					itemElSelectedBtn?.focus();
-					this.resetMove();
 				}
 				break;
 			case 'Escape':
@@ -380,6 +382,7 @@ export default class ReorderList extends HTMLElement {
 		Reset grabbed item state
 	*/
 	private resetMove(): void {
+		console.log('reset move');
 		this.grabbedItemEl?.removeAttribute(ATTRS.GRABBED_ITEM);
 		this.grabbedItemEl = null;
 		this.grabbedItemIndex = null;
