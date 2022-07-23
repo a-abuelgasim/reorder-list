@@ -90,6 +90,7 @@ export default class ReorderList extends HTMLElement {
 			const insertBeforeElIndex = this.grabbedItemIndexChange < 0 ?
 				newIndex :
 				newIndex + 1;
+
 			const grabbedItemEl = this.listEl!.insertBefore(this.grabbedItemEl!, this.itemEls![insertBeforeElIndex]);
 			const itemElSelectedBtn = grabbedItemEl.querySelector(`[${ATTRS.BTN}]`) as HTMLButtonElement;
 			itemElSelectedBtn?.focus();
