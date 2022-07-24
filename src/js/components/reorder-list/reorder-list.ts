@@ -168,8 +168,8 @@ export default class ReorderList extends HTMLElement {
 
 		this.cursorStartPos = (event as PointerEvent).pageY;
 
-		const itemToGrabEl = targetEl.closest(`[${ATTRS.ITEM}]`) as HTMLLIElement;
-		this.grabItem(itemToGrabEl);
+		const itemElClicked = targetEl.closest(`[${ATTRS.ITEM}]`) as HTMLLIElement;
+		this.grabItem(itemElClicked);
 
 		[this.listElTop, this.listElBottom] = this.getListBounds(this.listEl!);
 		this.grabbedItemElHeight = this.getItemHeight(this.grabbedItemEl!);
