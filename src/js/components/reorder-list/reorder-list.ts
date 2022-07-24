@@ -115,6 +115,7 @@ export default class ReorderList extends HTMLElement {
 			this.listEl!.style.display = '';
 			grabbedItemEl!.focus();
 			this.updateLiveRegion(`Item moved to position ${newIndex! + 1}`);
+
 			this.droppingItem = false;
 		}
 		this.resetMove();
