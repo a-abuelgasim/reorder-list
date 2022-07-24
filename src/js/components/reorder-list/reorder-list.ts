@@ -112,17 +112,14 @@ export default class ReorderList extends HTMLElement {
 				newIndex :
 				newIndex + 1;
 
+			this.listEl!.style.display = 'none';
 			const grabbedItemEl = this.listEl!.insertBefore(this.grabbedItemEl!, this.itemEls![insertBeforeElIndex]);
 			ReorderList.updateItemsAriaLabels(this.itemEls!);
+			this.listEl!.style.display = '';
+			grabbedItemEl!.focus();
+			this.updateLiveRegion(`Item moved to position ${newIndex! + 1}`);
 
-			// Hack that forces the update of the li element order as read out by VoiceOver (e.g. '1 of 20')
-			this.listEl!.style.display = 'none';
-			setTimeout(() => {
-				this.listEl!.style.display = '';
-				this.updateLiveRegion(`Item moved to position ${newIndex! + 1}`);
-				grabbedItemEl!.focus();
-				this.droppingItem = false;
-			}, 0);
+			this.droppingItem = false;
 		}
 		this.resetMove();
 	}
@@ -133,10 +130,8 @@ export default class ReorderList extends HTMLElement {
 	*/
 	private focusOutHandler(e: Event): void {
 		const focusOutOnBtn = (e.target as Element).closest(`[${ATTRS.BTN}]`);
-		if (focusOutOnBtn && !this.droppingItem) {
-			if (this.grabbedItemEl) {
-				this.updateLiveRegion('Item move cancelled');
-			}
+		if (focusOutOnBtn && this.grabbedItemEl && !this.droppingItem) {
+			this.updateLiveRegion('Item move cancelled');
 			this.resetMove();
 		}
 	}
