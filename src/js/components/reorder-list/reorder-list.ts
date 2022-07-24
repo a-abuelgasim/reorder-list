@@ -102,6 +102,16 @@ export default class ReorderList extends HTMLElement {
 
 
 	/*
+		Cancel move started using touch Assistive Tech
+	*/
+	private cancelTouchATMove(): void {
+		this.itemGrabbedUsingTouchAT = false;
+		this.updateLiveRegion('Item move cancelled');
+		this.resetMove();
+	}
+
+
+	/*
 		Drop grabbed item at new index based on this.grabbedItemIndexChange
 	*/
 	private dropGrabbedEl(): void {
@@ -292,16 +302,6 @@ export default class ReorderList extends HTMLElement {
 				break;
 			}
 		}
-	}
-
-
-	/*
-		Cancel move started using touch Assistive Tech
-	*/
-	private cancelTouchATMove(): void {
-		this.itemGrabbedUsingTouchAT = false;
-		this.updateLiveRegion('Item move cancelled');
-		this.resetMove();
 	}
 
 
